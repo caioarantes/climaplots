@@ -1,0 +1,2 @@
+pymannkendall>=1.4.3
+pyhomogeneity>=1.1
