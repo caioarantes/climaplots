@@ -1,1 +1,0 @@
-# plugin-qgis-climaplotss

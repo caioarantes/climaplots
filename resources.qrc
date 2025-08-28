@@ -1,4 +1,4 @@
-<RCC>
+ <RCC>
     <qresource prefix="/plugins/climaplots" >
         <file>icon.png</file>
     </qresource>
