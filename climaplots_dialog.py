@@ -51,6 +51,7 @@ import json
 import ssl
 import plotly.express as px
 import io
+import qgis
 
 # =============================================================================
 # QGIS IMPORTS
@@ -153,7 +154,9 @@ from qgis.PyQt import uic
 # LOCAL MODULE IMPORTS
 # =============================================================================
 
-
+from .modules import (
+    map_tools
+)
 # =============================================================================
 # UI CONFIGURATION
 # =============================================================================
@@ -209,6 +212,8 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
 
         # Initialize window size
         QTimer.singleShot(0, lambda: self.resizeEvent("small"))
+
+        self.tabWidget.currentChanged.connect(self.on_tab_changed)
 
     # =========================================================================
     # WINDOW EVENT HANDLERS
@@ -296,6 +301,18 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         self.hide()
         event.ignore()
 
+    def on_tab_changed(self, index):
+        """
+        Handle tab change events.
+        
+        """
+        print(f"Tab changed to index: {index}")
+        if index != 0:
+            self.resizeEvent("big")
+        else:
+            self.resizeEvent("small")
+
+
     def resizeEvent(self, event):
 
         self.setMinimumSize(0, 0)  # Remove minimum size constraint
@@ -305,7 +322,7 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             self.resize(405,180)
             self.setFixedSize(self.width(), self.height())  # Lock to small size
         elif event == "big":
-            self.resize(800, 482)
+            self.resize(945, 535)
             self.setFixedSize(self.width(), self.height())  # Lock to big size
 
 
@@ -317,7 +334,7 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         #self.tabWidget.currentChanged.connect(self.tabChanged)
         self.atributo.currentTextChanged.connect(self.plots1)
         self.atributo_2.currentTextChanged.connect(self.plots3)
-        self.googlemaps.clicked.connect(self.googlemaps_clicked)
+        self.googlemaps.clicked.connect(map_tools.hybrid_function)
         self.dataframes_dict = None
         sheet_names = [
             'Total Annual Precipitation',
@@ -343,45 +360,6 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             self.atributo_2.addItem(name)
         self.atributo_2.setCurrentIndex(0)
 
-    def centralizar(self):
-        qtRectangle = self.frameGeometry()
-        centerPoint = QDesktopWidget().availableGeometry().center()
-        qtRectangle.moveCenter(centerPoint)
-        self.move(qtRectangle.topLeft())
-        qtRectangle = self.frameGeometry()
-        centerPoint = QDesktopWidget().availableGeometry().center()
-        qtRectangle.moveCenter(centerPoint)
-        self.move(qtRectangle.topLeft())
-
-    def googlemaps_clicked(self):
-        google_hybrid_url = "type=xyz&zmin=0&zmax=20&url=https://mt1.google.com/vt/lyrs%3Dy%26x%3D{x}%26y%3D{y}%26z%3D{z}"
-        layer_name = "Google Hybrid"
-        provider_type = "wms"  # This is likely 'xyz' for this type of layer
-        crs = "EPSG:3857"
-
-        try:
-            # Create the XYZ tile layer
-            google_hybrid_layer = QgsRasterLayer(google_hybrid_url, layer_name, provider_type)
-
-            # Set the CRS for the layer
-            google_hybrid_layer.setCrs(QgsCoordinateReferenceSystem(crs))
-
-            if google_hybrid_layer.isValid():
-                QgsProject.instance().addMapLayer(google_hybrid_layer, False)
-
-                # Ensure the new layer is visible and beneath existing layers
-                google_hybrid_layer.setOpacity(1)
-                root = QgsProject.instance().layerTreeRoot()
-                root.addLayer(google_hybrid_layer)  # Add the layer at the bottom
-
-                iface.mapCanvas().refresh()
-                print(f"{layer_name} layer added successfully.")
-                #iface.mapCanvas().zoomToFullExtent()
-            else:
-                print(f"Failed to load {layer_name}. Invalid layer.")
-
-        except Exception as e:
-            print(f"Error loading {layer_name}: {e}")  
 
     def fun_fechou(self):
         self.LongEdit.clear()
@@ -505,7 +483,7 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         print('ok plot2')
 
     def plots3_compute(self):
-        print('plot3 começou')
+        print('plot3 compute começou')
         if self.LongEdit.text() == '' or self.df is None:
             'plot 3 failed'
             return
