@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1480</width>
-    <height>888</height>
+    <width>1057</width>
+    <height>575</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -75,7 +75,7 @@
     <bool>false</bool>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>3</number>
    </property>
    <property name="usesScrollButtons">
     <bool>false</bool>
@@ -109,7 +109,7 @@
        <rect>
         <x>10</x>
         <y>50</y>
-        <width>171</width>
+        <width>181</width>
         <height>31</height>
        </rect>
       </property>
@@ -207,7 +207,11 @@
       </font>
      </property>
      <property name="text">
-      <string>Run</string>
+      <string>Run Analysis</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../medias/icons8-reproduzir-50.png</normaloff>../medias/icons8-reproduzir-50.png</iconset>
      </property>
     </widget>
     <widget class="QPushButton" name="googlemaps">
@@ -266,14 +270,23 @@
     <widget class="QPushButton" name="navegador">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>230</x>
        <y>10</y>
-       <width>121</width>
+       <width>171</width>
        <height>31</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
      <property name="text">
-      <string>Abrir no navegador</string>
+      <string>Open in the browser</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../medias/open-in-browser.svg</normaloff>../medias/open-in-browser.svg</iconset>
      </property>
     </widget>
     <widget class="QComboBox" name="atributo">
@@ -285,19 +298,24 @@
        <height>31</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
      <item>
       <property name="text">
-       <string>T2M_MAX</string>
+       <string>Max Temperature</string>
       </property>
      </item>
      <item>
       <property name="text">
-       <string>T2M_MIN</string>
+       <string>Precipitation</string>
       </property>
      </item>
      <item>
       <property name="text">
-       <string>PRECTOTCORR</string>
+       <string>Min Temperature</string>
       </property>
      </item>
     </widget>
@@ -309,23 +327,32 @@
     <widget class="QPushButton" name="navegador_2">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>10</x>
        <y>10</y>
-       <width>121</width>
+       <width>181</width>
        <height>31</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
      <property name="text">
-      <string>Abrir no navegador</string>
+      <string>Open in the browser</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../medias/open-in-browser.svg</normaloff>../medias/open-in-browser.svg</iconset>
      </property>
     </widget>
-    <widget class="QWebView" name="webView_4" native="true">
+    <widget class="QWebView" name="webView_2" native="true">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>60</y>
-       <width>921</width>
-       <height>441</height>
+       <x>0</x>
+       <y>40</y>
+       <width>931</width>
+       <height>461</height>
       </rect>
      </property>
      <property name="mouseTracking">
@@ -357,14 +384,23 @@
     <widget class="QPushButton" name="navegador_3">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>500</x>
        <y>10</y>
-       <width>121</width>
+       <width>171</width>
        <height>31</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
      <property name="text">
-      <string>Abrir no navegador</string>
+      <string>Open in the browser</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../medias/open-in-browser.svg</normaloff>../medias/open-in-browser.svg</iconset>
      </property>
     </widget>
     <widget class="QComboBox" name="atributo_2">
@@ -372,18 +408,23 @@
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>211</width>
+       <width>481</width>
        <height>31</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
     </widget>
-    <widget class="QWebView" name="webView_5" native="true">
+    <widget class="QWebView" name="webView_3" native="true">
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>80</y>
+       <y>40</y>
        <width>931</width>
-       <height>421</height>
+       <height>461</height>
       </rect>
      </property>
      <property name="mouseTracking">
@@ -407,6 +448,9 @@
       </url>
      </property>
     </widget>
+    <zorder>webView_3</zorder>
+    <zorder>navegador_3</zorder>
+    <zorder>atributo_2</zorder>
    </widget>
   </widget>
  </widget>

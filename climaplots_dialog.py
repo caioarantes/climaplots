@@ -50,6 +50,8 @@ import os, json, requests
 import json
 import ssl
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import io
 import qgis
 
@@ -165,7 +167,6 @@ from .modules import (
 ui_file = os.path.join("ui", "climaplots_dialog_base.ui")
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), ui_file))
 
-
 # =============================================================================
 # MAIN DIALOG CLASS
 # =============================================================================
@@ -173,11 +174,6 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), ui_file))
 class ClimaPlotsDialog(QDialog, FORM_CLASS):
     """
     Main dialog class for ClimaPlots plugin.
-    
-    This class provides a graphical interface for Sentinel-1 SAR Backscatter 
-    Analysis Ready Data Preparation using Google Earth Engine. It simplifies
-    the process of configuring and running Sentinel-1 SAR data processing
-    without requiring manual coding.
     
     Attributes:
         iface: QGIS interface object
@@ -213,11 +209,77 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         # Initialize window size
         QTimer.singleShot(0, lambda: self.resizeEvent("small"))
 
-        self.tabWidget.currentChanged.connect(self.on_tab_changed)
+        self.config = {
+            "displaylogo": False,
+            "modeBarButtonsToRemove": [
+                "toImage",
+                "sendDataToCloud",
+                "zoom2d",
+                "pan2d",
+                "select2d",
+                "lasso2d",
+                "zoomIn2d",
+                "zoomOut2d",
+                "autoScale2d",
+                "resetScale2d",
+                "hoverClosestCartesian",
+                "hoverCompareCartesian",
+                "zoom3d",
+                "pan3d",
+                "orbitRotation",
+                "tableRotation",
+                "resetCameraLastSave",
+                "resetCameraDefault3d",
+                "hoverClosest3d",
+                "zoomInGeo",
+                "zoomOutGeo",
+                "resetGeo",
+                "hoverClosestGeo",
+                "hoverClosestGl2d",
+                "hoverClosestPie",
+                "toggleHover",
+                "toggleSpikelines",
+                "resetViews",
+            ],
+        }
 
-    # =========================================================================
-    # WINDOW EVENT HANDLERS
-    # =========================================================================
+        self.tabWidget.currentChanged.connect(self.on_tab_changed)
+        self.navegador.clicked.connect(self.on_navegador_clicked)
+        self.navegador_2.clicked.connect(self.on_navegador_clicked_2)
+        self.navegador_3.clicked.connect(self.on_navegador_clicked_3)
+
+        self.rejected.connect(self.fun_fechou)
+        self.df = None
+        self.gerar_req.clicked.connect(self.request_api)
+        self.atributo.currentTextChanged.connect(self.plots1)
+        self.atributo_2.currentTextChanged.connect(self.plots3)
+        self.googlemaps.clicked.connect(map_tools.hybrid_function)
+        self.dataframes_dict = None
+        sheet_names = [
+            'Total Annual Precipitation',
+            'Annual Frost Days',
+            'Annual Tropical Nights',
+            'Annual Icing Days',
+            'Annual Summer Days',
+            'Monthly Maximum Temperature',
+            'Monthly Minimum Temperature of Maximum Temperatures',
+            'Monthly Maximum Temperature of Minimum Temperatures',
+            'Monthly Minimum Temperature',
+            'Daily Temperature Range',
+            'Monthly Maximum 1-day Precipitation',
+            'Monthly Maximum 5-day Precipitation',
+            'Annual Count of Days when Precipitation Exceeds 10mm',
+            'Annual Count of Days when Precipitation Exceeds 20mm',
+            'Simple Precipitation Intensity Index',
+            'Number of Consecutive Dry Days in a Month',
+            'Number of Consecutive Wet Days in a Month',
+            'The Standardized Precipitation Index (SPI)'
+        ]
+        for name in sheet_names:
+            self.atributo_2.addItem(name)
+        self.atributo_2.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(0)
+
     
     def showEvent(self, event):
         """
@@ -312,7 +374,6 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         else:
             self.resizeEvent("small")
 
-
     def resizeEvent(self, event):
 
         self.setMinimumSize(0, 0)  # Remove minimum size constraint
@@ -325,246 +386,191 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             self.resize(945, 535)
             self.setFixedSize(self.width(), self.height())  # Lock to big size
 
-
-        #self.setupUi(self)
-        self.rejected.connect(self.fun_fechou)
-        #self.tamanho_inicial()
-        self.df = None
-        self.gerar_req.clicked.connect(self.request_api)
-        #self.tabWidget.currentChanged.connect(self.tabChanged)
-        self.atributo.currentTextChanged.connect(self.plots1)
-        self.atributo_2.currentTextChanged.connect(self.plots3)
-        self.googlemaps.clicked.connect(map_tools.hybrid_function)
-        self.dataframes_dict = None
-        sheet_names = [
-            'Total Annual Precipitation',
-            'Annual Frost Days',
-            'Annual Tropical Nights',
-            'Annual Icing Days',
-            'Annual Summer Days',
-            'Monthly Maximum Temperature',
-            'Monthly Minimum Temperature of Maximum Temperatures',
-            'Monthly Maximum Temperature of Minimum Temperatures',
-            'Monthly Minimum Temperature',
-        #    'Daily Temperature Range',
-            'Monthly Maximum 1-day Precipitation',
-            'Monthly Maximum 5-day Precipitation',
-            'Annual Count of Days when Precipitation Exceeds 10mm',
-            'Annual Count of Days when Precipitation Exceeds 20mm',
-            'Simple Precipitation Intensity Index',
-            'Number of Consecutive Dry Days in a Month',
-            'Number of Consecutive Wet Days in a Month',
-            'The Standardized Precipitation Index (SPI)'
-        ]
-        for name in sheet_names:
-            self.atributo_2.addItem(name)
-        self.atributo_2.setCurrentIndex(0)
-
-
     def fun_fechou(self):
         self.LongEdit.clear()
         self.LatEdit.clear()
         self.tabWidget.setCurrentIndex(0)
         qgis.utils.iface.actionPan().trigger()
 
-    def plots1(self):
-        if self.LongEdit.text() == '' or self.df is None:
-            return
+    def on_navegador_clicked(self):
+        self.fig.show()
 
-        df =self.df
+    def on_navegador_clicked_2(self):
+        self.fig2.show()
+
+    def on_navegador_clicked_3(self):
+        self.fig3.show()
+
+    def plots1(self):
+        if self.df is None:
+            return
         atributo = self.atributo.currentText()
-        df = df.reset_index().rename(columns={'index': 'Date'})
-        df['Date'] =  pd.to_datetime(df['Date'])
-        df_aux = df.groupby(df['Date'].dt.year)[['PRECTOTCORR']].sum()
-        df = df.groupby(df['Date'].dt.year).mean()[['T2M_MIN','T2M_MAX']]
-        df['PRECTOTCORR'] = df_aux['PRECTOTCORR']
-        df.reset_index(inplace=True)
-        df_aux = df[['Date', atributo]].copy()
-        df_aux['Date'] = (df_aux['Date'].astype(str)+'-01-01').apply(pd.to_datetime)
-        df_aux.index = df_aux['Date']
-        df_aux = df_aux[[atributo]].astype(float)
-        result_mk = mk.original_test(df_aux)
-        result_pettitt = hg.pettitt_test(df_aux)
+        df = self.df.copy()
+        # Agrupa por ano corretamente e usa a coluna 'Date' como index
+        df['Year'] = df['Date'].dt.year
+        df_aux = df.groupby('Year')[['Precipitation']].sum()
+        df_mean = df.groupby('Year').mean()[['Min Temperature','Max Temperature']]
+        df_mean['Precipitation'] = df_aux['Precipitation']
+        df_mean.reset_index(inplace=True)
+        # Cria coluna 'Date' para o início de cada ano
+        df_mean['Date'] = pd.to_datetime(df_mean['Year'].astype(str) + '-01-01')
+        df_plot = df_mean[['Date', atributo]].copy()
+        df_plot.index = df_plot['Date']
+        df_plot = df_plot[[atributo]].astype(float)
+        result_mk = mk.original_test(df_plot)
+        result_pettitt = hg.pettitt_test(df_plot)
 
         title1 = 'Mann Kendall Test: trend=<b>'+result_mk.trend+'</b>, alpha=0.05'+', p-value='+str(round(result_mk.p, 4))
         title2 = None
         if result_pettitt.h:
-            title2 = 'Pettitt Test: data is <b>nonhomogeneous</b>, probable change point location='+result_pettitt.cp[:4]+', alpha=0.05'+', p-value='+str(round(result_pettitt.p, 4))
+            title2 = 'Pettitt Test: data is <b>nonhomogeneous</b>, probable change point location='+str(result_pettitt.cp)[:4]+', alpha=0.05'+', p-value='+str(round(result_pettitt.p, 4))
         else:
             title2 = 'Pettitt Test: data is <b>homogeneous</b>, alpha=0.05'+', p-value='+str(round(result_pettitt.p, 4))
 
         title = title1+'<br>'+title2
 
-        myFile = io.StringIO()
-        fig = px.line(df, x="Date", y=[atributo], title='<b>'+atributo+'</b>  (Long: '+self.LongEdit.text() + ' Lat: '+self.LatEdit.text()+') <br>'+title)
-        config = {'displaylogo': False,'modeBarButtonsToRemove': [
-        "toImage",
-        "sendDataToCloud",
-        "zoom2d",
-        "pan2d",
-        "select2d",
-        "lasso2d",
-        "zoomIn2d",
-        "zoomOut2d",
-        "autoScale2d",
-        "resetScale2d",
-        "hoverClosestCartesian",
-        "hoverCompareCartesian",
-        "zoom3d",
-        "pan3d",
-        "orbitRotation",
-        "tableRotation",
-        "resetCameraLastSave",
-        "resetCameraDefault3d",
-        "hoverClosest3d",
-        "zoomInGeo",
-        "zoomOutGeo",
-        "resetGeo",
-        "hoverClosestGeo",
-        "hoverClosestGl2d",
-        "hoverClosestPie",
-        "toggleHover",
-        "toggleSpikelines",
-        "resetViews"
-        ]}
-        fig.update_layout(showlegend=False)
-        fig.write_html(myFile, config = config)
-        html = myFile.getvalue()  
-        self.webView_1.setHtml(html)
+        self.fig = px.line(df_mean, x="Date", y=[atributo], title='<b>'+atributo+'</b>  (Long: '+self.LongEdit.text() + ' Lat: '+self.LatEdit.text()+') <br>'+title)
+
+        self.fig.update_layout(showlegend=False)
+
+        if atributo == "Precipitation":
+            self.fig.update_yaxes(title_text="Precipitation (mm) - Annual Total")
+        if atributo == "Min Temperature":
+            self.fig.update_yaxes(title_text="Min Temperature (ºC)")
+        if atributo == "Max Temperature":
+            self.fig.update_yaxes(title_text="Max Temperature (ºC)")
+
+        self.webView_1.setHtml(
+            self.fig.to_html(include_plotlyjs="cdn", config=self.config)
+        )
         print('ok plot1')
 
     def plots2(self):
-        print('plot2 começou')
-        if self.LongEdit.text() == '' or self.df is None:
+        if self.df is None:
             return
-        df = self.df
-        df = df.reset_index().rename(columns={'index': 'Date'})
-        df['Date'] =  pd.to_datetime(df['Date'])
-        df_aux = df.groupby([(df.Date.dt.year), (df.Date.dt.month)]).sum(numeric_only=True)[['PRECTOTCORR']]
-        df = df.groupby([(df.Date.dt.year), (df.Date.dt.month)]).mean(numeric_only=True)[['T2M_MIN','T2M_MAX']]
-        df['PRECTOTCORR'] = df_aux['PRECTOTCORR']
+        print('plot2 começou')
+
+        df = self.df.copy()
+        df_aux = df.groupby([(df.Date.dt.year), (df.Date.dt.month)]).sum(numeric_only=True)[['Precipitation']]
+        df = df.groupby([(df.Date.dt.year), (df.Date.dt.month)]).mean(numeric_only=True)[['Min Temperature','Max Temperature']]
+        df['Precipitation'] = df_aux['Precipitation']
         df.reset_index(level=1, inplace=True)
         df = df.groupby(df.Date).mean()
         df.reset_index(inplace=True)
         df.rename(columns = {'Date':'Month'}, inplace = True)
 
-        fig = make_subplots(specs=[[{"secondary_y": True}]])
+        self.fig2 = make_subplots(specs=[[{"secondary_y": True}]])
         # Add traces
-        fig.add_trace(
-            go.Bar(x=df['Month'], y=df['PRECTOTCORR'], name='PRECTOTCORR'),
+        self.fig2.add_trace(
+            go.Bar(x=df['Month'], y=df['Precipitation'], name='Precipitation'),
             secondary_y=False,
         )
-        fig.add_trace(
-            go.Line(x=df['Month'], y=df['T2M_MAX'], name='T2M_MAX'),
+        self.fig2.add_trace(
+            go.Line(x=df['Month'], y=df['Max Temperature'], name='Max Temperature'),
             secondary_y=True,
         )
-        fig.update_layout(
-            title_text="<b>Termopluviométrico</b>  (Long: "+self.LongEdit.text() + " Lat: "+self.LatEdit.text()+")"
+        self.fig2.update_layout(
+            title_text="<b>Thermo-pluviometric diagram</b>  (Long: "+self.LongEdit.text() + " Lat: "+self.LatEdit.text()+")"
         )
 
         # Set x-axis title
-        fig.update_xaxes(title_text="Mês")
+        self.fig2.update_xaxes(title_text="Month")
 
-        fig.update_layout(
+        self.fig2.update_layout(
         xaxis = dict(
             tickmode = 'linear',
         )
         )
 
         # Set y-axes titles
-        fig.update_yaxes(title_text="T2M_MAX (ºC)", secondary_y=True)
-        fig.update_yaxes(title_text="PRECTOTCORR (mm)", secondary_y=False)
+        self.fig2.update_yaxes(title_text="Max Temperature (ºC)", secondary_y=True)
+        self.fig2.update_yaxes(title_text="Precipitation (mm)", secondary_y=False)
 
-        myFile = io.StringIO()
-        config = {'displaylogo': False,'modeBarButtonsToRemove': ['toImage','toggleHover']}
-        fig.write_html(myFile, config = config)
-        html = myFile.getvalue()  
-        self.webView_4.setHtml(html)
+        self.webView_2.setHtml(
+            self.fig2.to_html(include_plotlyjs="cdn", config=self.config)
+        )
         print('ok plot2')
 
     def plots3_compute(self):
-        print('plot3 compute começou')
-        if self.LongEdit.text() == '' or self.df is None:
-            'plot 3 failed'
+        if self.df is None:
             return
-        df = self.df
-        df = df.reset_index().rename(columns={'index': 'Date'})
-        df['Date'] =  pd.to_datetime(df['Date'])
+        print('plot3 compute começou')
+        df = self.df.copy()
         df_aux = df.copy()       
         df.set_index('Date', inplace=True)
-        ds = df[['PRECTOTCORR', 'T2M_MAX', 'T2M_MIN']].copy().to_xarray()
+        ds = df[['Precipitation', 'Max Temperature', 'Min Temperature']].copy().to_xarray()
 
         precip_indices = pdex.indices(time_dim='Date')
         temp_indices = tdex.indices(time_dim='Date')
 
-        # Temperature Indices using 'T2M_MAX' and 'T2M_MIN'
-        frost_days_df = temp_indices.annual_frost_days(ds, varname='T2M_MIN').to_dataframe()
+        # Temperature Indices using 'Max Temperature' and 'Min Temperature'
+        frost_days_df = temp_indices.annual_frost_days(ds, varname='Min Temperature').to_dataframe()
         frost_days_df.columns = ['Annual Frost Days']
         # frost_days_df.to_csv(name +' - '+ 'Annual Frost Days.csv')
 
-        tropical_nights_df = temp_indices.annual_tropical_nights(ds, varname='T2M_MIN').to_dataframe()
+        tropical_nights_df = temp_indices.annual_tropical_nights(ds, varname='Min Temperature').to_dataframe()
         tropical_nights_df.columns = ['Annual Tropical Nights']
         # tropical_nights_df.to_csv(name +' - '+ 'Annual Tropical Nights.csv')
 
-        icing_days_df = temp_indices.annual_icing_days(ds, varname='T2M_MAX').to_dataframe()
+        icing_days_df = temp_indices.annual_icing_days(ds, varname='Max Temperature').to_dataframe()
         icing_days_df.columns = ['Annual Icing Days']
         # icing_days_df.to_csv(name +' - '+ 'Annual Icing Days.csv')
 
-        summer_days_df = temp_indices.annual_summer_days(ds, varname='T2M_MAX').to_dataframe()
+        summer_days_df = temp_indices.annual_summer_days(ds, varname='Max Temperature').to_dataframe()
         summer_days_df.columns = ['Annual Summer Days']
         # summer_days_df.to_csv(name +' - '+ 'Annual Summer Days.csv')
 
-        txx_df = temp_indices.monthly_txx(ds, varname='T2M_MAX').to_dataframe()[['T2M_MAX']]
+        txx_df = temp_indices.monthly_txx(ds, varname='Max Temperature').to_dataframe()[['Max Temperature']]
         txx_df.columns = ['Monthly Maximum Temperature']
         # txx_df.to_csv(name +' - '+ 'Monthly Maximum Temperature.csv')
 
-        txn_df = temp_indices.monthly_txn(ds, varname='T2M_MAX').to_dataframe()[['T2M_MAX']]
+        txn_df = temp_indices.monthly_txn(ds, varname='Max Temperature').to_dataframe()[['Max Temperature']]
         txn_df.columns = ['Monthly Minimum Temperature of Maximum Temperatures']
         # txn_df.to_csv(name +' - '+ 'Monthly Minimum Temperature of Maximum Temperatures.csv')
 
-        tnx_df = temp_indices.monthly_tnx(ds, varname='T2M_MIN').to_dataframe()[['T2M_MIN']]
+        tnx_df = temp_indices.monthly_tnx(ds, varname='Min Temperature').to_dataframe()[['Min Temperature']]
         tnx_df.columns = ['Monthly Maximum Temperature of Minimum Temperatures']
         # tnx_df.to_csv(name +' - '+ 'Monthly Maximum Temperature of Minimum Temperatures.csv')
 
-        tnn_df = temp_indices.monthly_tnn(ds, varname='T2M_MIN').to_dataframe()[['T2M_MIN']]
+        tnn_df = temp_indices.monthly_tnn(ds, varname='Min Temperature').to_dataframe()[['Min Temperature']]
         tnn_df.columns = ['Monthly Minimum Temperature']
         # tnn_df.to_csv(name +' - '+ 'Monthly Minimum Temperature.csv')
 
-        dtr_df = temp_indices.daily_temperature_range(ds, ds, min_varname='T2M_MIN', max_varname='T2M_MAX').to_dataframe(name="DTR")
+        dtr_df = temp_indices.daily_temperature_range(ds, ds, min_varname='Min Temperature', max_varname='Max Temperature').to_dataframe(name="DTR")
         dtr_df.columns = ['Daily Temperature Range']
         # dtr_df.to_csv(name +' - '+ 'Daily Temperature Range.csv')
-        rx1day_df = precip_indices.monthly_rx1day(ds, varname='PRECTOTCORR').to_dataframe()
+        rx1day_df = precip_indices.monthly_rx1day(ds, varname='Precipitation').to_dataframe()
         rx1day_df.columns = ['Monthly Maximum 1-day Precipitation']
         # rx1day_df.to_csv(name +' - '+ 'Monthly Maximum 1-day Precipitation.csv')
 
-        rx5day_df = precip_indices.monthly_rx5day(ds, varname='PRECTOTCORR').to_dataframe()
+        rx5day_df = precip_indices.monthly_rx5day(ds, varname='Precipitation').to_dataframe()
         rx5day_df.columns = ['Monthly Maximum 5-day Precipitation']
         # rx5day_df.to_csv(name +' - '+ 'Monthly Maximum 5-day Precipitation.csv')
 
-        r10mm_df = precip_indices.annual_r10mm(ds, varname='PRECTOTCORR').to_dataframe()
+        r10mm_df = precip_indices.annual_r10mm(ds, varname='Precipitation').to_dataframe()
         r10mm_df.columns = ['Annual Count of Days when Precipitation Exceeds 10mm']
         # r10mm_df.to_csv(name +' - '+ 'Annual Count of Days when Precipitation Exceeds 10mm.csv')
 
-        r20mm_df = precip_indices.annual_r20mm(ds, varname='PRECTOTCORR').to_dataframe()
+        r20mm_df = precip_indices.annual_r20mm(ds, varname='Precipitation').to_dataframe()
         r20mm_df.columns = ['Annual Count of Days when Precipitation Exceeds 20mm']
         # r20mm_df.to_csv(name +' - '+ 'Annual Count of Days when Precipitation Exceeds 20mm.csv')
 
-        prcptot_annual_df = precip_indices.prcptot(ds, period='1Y', varname='PRECTOTCORR').to_dataframe()
+        prcptot_annual_df = precip_indices.prcptot(ds, period='1Y', varname='Precipitation').to_dataframe()
         prcptot_annual_df.columns = ['Total Annual Precipitation']
         # prcptot_annual_df.to_csv(name +' - '+ 'Total Annual Precipitation.csv')
 
-        sdii_value_df = precip_indices.sdii(ds, period='1M', varname='PRECTOTCORR').to_dataframe()
+        sdii_value_df = precip_indices.sdii(ds, period='1M', varname='Precipitation').to_dataframe()
         sdii_value_df.columns = ['Simple Precipitation Intensity Index']
         # sdii_value_df.to_csv(name +' - '+ 'Simple Precipitation Intensity Index.csv')
 
-        cdd_value_df = precip_indices.cdd(ds, period='1M', varname='PRECTOTCORR').to_dataframe()
+        cdd_value_df = precip_indices.cdd(ds, period='1M', varname='Precipitation').to_dataframe()
         cdd_value_df.columns = ['Number of Consecutive Dry Days in a Month']
         # cdd_value_df.to_csv(name +' - '+ 'Number of Consecutive Dry Days in a Month.csv')
 
-        cwd_value_df = precip_indices.cwd(ds, period='1M', varname='PRECTOTCORR').to_dataframe()
+        cwd_value_df = precip_indices.cwd(ds, period='1M', varname='Precipitation').to_dataframe()
         cwd_value_df.columns = ['Number of Consecutive Wet Days in a Month']
 
-        df_aux['Accumulated_Precipitation'] = df_aux['PRECTOTCORR'].rolling(window=90).sum()
+        df_aux['Accumulated_Precipitation'] = df_aux['Precipitation'].rolling(window=90).sum()
         df_aux.dropna(inplace=True)
         params = gamma.fit(df_aux['Accumulated_Precipitation'], floc=0)
         df_aux['Cumulative_Probability'] = gamma.cdf(df_aux['Accumulated_Precipitation'], *params)
@@ -599,48 +605,17 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         print('ok plot3 compute')
 
     def plots3(self):
-        print('plot3 começou')
-        if self.atributo_2.currentText() == None or self.dataframes_dict is None:
+        if self.df is None:
             return
+        print('plot3 começou')
         df_plot = self.dataframes_dict[self.atributo_2.currentText()]
         print(self.atributo_2.currentText())
-        myFile = io.StringIO()
-        fig = px.line(df_plot, y=self.atributo_2.currentText(), title='<b>'+self.atributo_2.currentText()+'</b>  (Long: '+self.LongEdit.text() + ' Lat: '+self.LatEdit.text()+')')
-        config = {'displaylogo': False,'modeBarButtonsToRemove': [
-        "toImage",
-        "sendDataToCloud",
-        "zoom2d",
-        "pan2d",
-        "select2d",
-        "lasso2d",
-        "zoomIn2d",
-        "zoomOut2d",
-        "autoScale2d",
-        "resetScale2d",
-        "hoverClosestCartesian",
-        "hoverCompareCartesian",
-        "zoom3d",
-        "pan3d",
-        "orbitRotation",
-        "tableRotation",
-        "resetCameraLastSave",
-        "resetCameraDefault3d",
-        "hoverClosest3d",
-        "zoomInGeo",
-        "zoomOutGeo",
-        "resetGeo",
-        "hoverClosestGeo",
-        "hoverClosestGl2d",
-        "hoverClosestPie",
-        "toggleHover",
-        "toggleSpikelines",
-        "resetViews"
-        ]}
-        fig.update_layout(showlegend=False)
-        fig.write_html(myFile, config = config)
-        html = myFile.getvalue()  
-        self.webView_5.setHtml(html)
-        print('ok plot3') 
+        self.fig3 = px.line(df_plot, y=self.atributo_2.currentText(), title='<b>'+self.atributo_2.currentText()+'</b>  (Long: '+self.LongEdit.text() + ' Lat: '+self.LatEdit.text()+')')
+        self.fig3.update_layout(showlegend=False)
+        self.webView_3.setHtml(
+            self.fig3.to_html(include_plotlyjs="cdn", config=self.config)
+        )
+        print('ok plot3')
 
     def actual_request_api(self):
         endtime = str(int(datetime.date.today().strftime("%Y"))-1)+'1231'
@@ -648,20 +623,23 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         api_request_url = base_url.format(longitude=float(self.LongEdit.text()), latitude = float(self.LatEdit.text()))
         response = requests.get(url=api_request_url, verify=True, timeout=1000)
         content = json.loads(response.content.decode('utf-8'))
-        self.df = pd.DataFrame.from_dict(content['properties']['parameter'])
-        print('ok request')       
+        df = pd.DataFrame.from_dict(content['properties']['parameter'])
+        df = df.reset_index().rename(columns={'index': 'Date', 'PRECTOTCORR': 'Precipitation', 'T2M_MIN': 'Min Temperature', 'T2M_MAX': 'Max Temperature'})
+        df.Date = pd.to_datetime(df.Date)
+        print('ok request') 
+        print(df.head())
+        return df      
 
     def request_api(self):
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            self.actual_request_api()
+            self.df = self.actual_request_api()
             self.plots1()
-            self.tabWidget.setCurrentIndex(1)
             self.plots2()
             self.plots3_compute()
             self.plots3()
-        
-            QApplication.restoreOverrideCursor()
+            self.tabWidget.setCurrentIndex(1)            
         except Exception as e:
             print(f"An error occurred: {e}")
+        finally:
             QApplication.restoreOverrideCursor()
