@@ -157,7 +157,8 @@ from qgis.PyQt import uic
 # =============================================================================
 
 from .modules import (
-    map_tools
+    map_tools,
+    save_utils,
 )
 # =============================================================================
 # UI CONFIGURATION
@@ -247,6 +248,10 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         self.navegador.clicked.connect(self.on_navegador_clicked)
         self.navegador_2.clicked.connect(self.on_navegador_clicked_2)
         self.navegador_3.clicked.connect(self.on_navegador_clicked_3)
+        self.save_plot.clicked.connect(self.save_clicked)
+        self.save_plot2.clicked.connect(self.save_clicked2)
+        self.save_plot3.clicked.connect(self.save_clicked3)
+        self.save_raw.clicked.connect(self.save_raw_clicked)
 
         self.rejected.connect(self.fun_fechou)
         self.df = None
@@ -392,6 +397,30 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         self.tabWidget.setCurrentIndex(0)
         qgis.utils.iface.actionPan().trigger()
 
+    def save_clicked(self):
+        name = (
+            f"Anual_trends_{self.atributo.currentText()}.csv"
+        )
+        save_utils.save(self.df_save, name, self)
+
+    def save_clicked2(self):
+        name = (
+            f"Thermopluviometric.csv"
+        )
+        save_utils.save(self.df_save2, name, self)
+
+    def save_clicked3(self):
+        name = (
+            f"{self.atributo_2.currentText()}.csv"
+        )
+        save_utils.save(self.df_save3, name, self)
+
+    def save_raw_clicked(self):
+        name = (
+            f"Raw_data.csv"
+        )
+        save_utils.save(self.df, name, self)
+
     def on_navegador_clicked(self):
         self.fig.show()
 
@@ -445,6 +474,8 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         )
         print('ok plot1')
 
+        self.df_save = df_mean
+
     def plots2(self):
         if self.df is None:
             return
@@ -490,6 +521,8 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             self.fig2.to_html(include_plotlyjs="cdn", config=self.config)
         )
         print('ok plot2')
+
+        self.df_save2 = df
 
     def plots3_compute(self):
         if self.df is None:
@@ -615,6 +648,12 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         self.webView_3.setHtml(
             self.fig3.to_html(include_plotlyjs="cdn", config=self.config)
         )
+        # Adiciona coluna 'Year' ao DataFrame
+        if 'Date' in df_plot.columns:
+            df_plot['Year'] = pd.to_datetime(df_plot['Date']).dt.year
+        elif df_plot.index.name == 'Date':
+            df_plot['Year'] = pd.to_datetime(df_plot.index).year
+        self.df_save3 = df_plot
         print('ok plot3')
 
     def actual_request_api(self):

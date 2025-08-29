@@ -75,7 +75,7 @@
     <bool>false</bool>
    </property>
    <property name="currentIndex">
-    <number>3</number>
+    <number>1</number>
    </property>
    <property name="usesScrollButtons">
     <bool>false</bool>
@@ -241,9 +241,9 @@
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>40</y>
+       <y>10</y>
        <width>931</width>
-       <height>461</height>
+       <height>491</height>
       </rect>
      </property>
      <property name="mouseTracking">
@@ -270,7 +270,7 @@
     <widget class="QPushButton" name="navegador">
      <property name="geometry">
       <rect>
-       <x>230</x>
+       <x>200</x>
        <y>10</y>
        <width>171</width>
        <height>31</height>
@@ -294,7 +294,7 @@
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>211</width>
+       <width>181</width>
        <height>31</height>
       </rect>
      </property>
@@ -319,6 +319,50 @@
       </property>
      </item>
     </widget>
+    <widget class="QPushButton" name="save_plot">
+     <property name="geometry">
+      <rect>
+       <x>380</x>
+       <y>10</y>
+       <width>111</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Save data</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../medias/diskette.png</normaloff>../medias/diskette.png</iconset>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="save_raw">
+     <property name="geometry">
+      <rect>
+       <x>750</x>
+       <y>10</y>
+       <width>171</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Save raw daily data</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../medias/diskette.png</normaloff>../medias/diskette.png</iconset>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="tab_2">
     <attribute name="title">
@@ -327,7 +371,7 @@
     <widget class="QPushButton" name="navegador_2">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>620</x>
        <y>10</y>
        <width>181</width>
        <height>31</height>
@@ -350,9 +394,9 @@
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>40</y>
+       <y>10</y>
        <width>931</width>
-       <height>461</height>
+       <height>491</height>
       </rect>
      </property>
      <property name="mouseTracking">
@@ -376,6 +420,28 @@
       </url>
      </property>
     </widget>
+    <widget class="QPushButton" name="save_plot2">
+     <property name="geometry">
+      <rect>
+       <x>810</x>
+       <y>10</y>
+       <width>111</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Save data</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../medias/diskette.png</normaloff>../medias/diskette.png</iconset>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="tab_3">
     <attribute name="title">
@@ -384,9 +450,9 @@
     <widget class="QPushButton" name="navegador_3">
      <property name="geometry">
       <rect>
-       <x>500</x>
+       <x>520</x>
        <y>10</y>
-       <width>171</width>
+       <width>201</width>
        <height>31</height>
       </rect>
      </property>
@@ -408,7 +474,7 @@
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>481</width>
+       <width>501</width>
        <height>31</height>
       </rect>
      </property>
@@ -422,9 +488,9 @@
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>40</y>
+       <y>10</y>
        <width>931</width>
-       <height>461</height>
+       <height>491</height>
       </rect>
      </property>
      <property name="mouseTracking">
@@ -448,9 +514,32 @@
       </url>
      </property>
     </widget>
+    <widget class="QPushButton" name="save_plot3">
+     <property name="geometry">
+      <rect>
+       <x>730</x>
+       <y>10</y>
+       <width>191</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Save data</string>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>../medias/diskette.png</normaloff>../medias/diskette.png</iconset>
+     </property>
+    </widget>
     <zorder>webView_3</zorder>
     <zorder>navegador_3</zorder>
     <zorder>atributo_2</zorder>
+    <zorder>save_plot3</zorder>
    </widget>
   </widget>
  </widget>
