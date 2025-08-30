@@ -19,7 +19,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-
 """
 
 # =============================================================================
@@ -27,39 +26,45 @@
 # =============================================================================
 import os
 import sys
-
+import datetime
+import importlib.util
+import urllib.request
+import urllib.parse
+import urllib.error
+import json
+import ssl
+import io
 
 # =============================================================================
-# THIRD-PARTY IMPORTS
+# THIRD-PARTY SCIENTIFIC COMPUTING IMPORTS
 # =============================================================================
+import numpy as np
+import pandas as pd
+import scipy
+import requests
+from scipy.stats import gamma, norm
 
+# Set numpy boolean compatibility
+np.bool = np.bool_
+
+# Climate analysis libraries
 import pymannkendall as mk
 import pyhomogeneity as hg
 import climdex.precipitation as pdex
 import climdex.temperature as tdex
-import datetime
 import xarray as xr
-import numpy, scipy
-import numpy as np
-np.bool = np.bool_
-from scipy.stats import gamma, norm
-import importlib.util
-import pandas as pd
-import urllib.request, urllib.parse, urllib.error
-import os, json, requests
-import json
-import ssl
+
+# Plotting libraries
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import io
+
+# QGIS imports
 import qgis
 
 # =============================================================================
-# QGIS IMPORTS
+# QGIS CORE IMPORTS
 # =============================================================================
-
-# QGIS Core imports
 from qgis.core import (
     # Basic QGIS classes
     QgsMessageLog,
@@ -68,7 +73,7 @@ from qgis.core import (
     QgsProject,
     QgsApplication,
     
-    # Vector handling
+    # Vector layer handling
     QgsVectorLayer,
     QgsVectorFileWriter,
     QgsFeatureRequest,
@@ -76,7 +81,7 @@ from qgis.core import (
     QgsGeometry,
     QgsField,
     
-    # Raster handling
+    # Raster layer handling
     QgsRasterLayer,
     QgsRasterShader,
     QgsColorRampShader,
@@ -90,7 +95,7 @@ from qgis.core import (
     QgsColorRamp,
     QgsLayerTreeLayer,
     
-    # Coordinate systems and geometry
+    # Coordinate systems and geometry processing
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsRectangle,
@@ -98,11 +103,13 @@ from qgis.core import (
     # Processing and feedback
     QgsProcessingFeedback,
     
-    # Map layers
+    # Map layer management
     QgsMapLayer,
 )
 
-# Qt GUI imports
+# =============================================================================
+# QGIS GUI IMPORTS
+# =============================================================================
 from qgis.PyQt.QtGui import (
     QFont, 
     QColor
@@ -118,13 +125,13 @@ from qgis.PyQt.QtCore import (
 )
 
 from qgis.PyQt.QtWidgets import (
-    # Application and main window
+    # Application and main window components
     QApplication,
     QMainWindow,
     QWidget,
     QDialog,
     
-    # Layout managers
+    # Layout management
     QVBoxLayout,
     QHBoxLayout,
     QGridLayout,
@@ -132,6 +139,7 @@ from qgis.PyQt.QtWidgets import (
     # Input widgets
     QCheckBox,
     QDateEdit,
+    QLineEdit,
     QPushButton,
     QToolButton,
     
@@ -145,25 +153,25 @@ from qgis.PyQt.QtWidgets import (
     QFileDialog,
     QDialogButtonBox,
     
-    # Size policies
+    # Size and layout policies
     QSizePolicy,
 )
 
 from qgis.PyQt import uic
+import os
 
 
 # =============================================================================
 # LOCAL MODULE IMPORTS
 # =============================================================================
-
 from .modules import (
     map_tools,
     save_utils,
 )
+
 # =============================================================================
 # UI CONFIGURATION
 # =============================================================================
-
 # Load the UI file for the main dialog
 ui_file = os.path.join("ui", "climaplots_dialog_base.ui")
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), ui_file))
@@ -176,25 +184,39 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
     """
     Main dialog class for ClimaPlots plugin.
     
+    This class handles the user interface for climate data analysis and visualization.
+    It provides functionality for:
+    - Fetching climate data from NASA POWER API
+    - Performing statistical analysis (Mann-Kendall, Pettitt tests)
+    - Generating various climate plots and indices
+    - Exporting results and visualizations
+    
     Attributes:
-        iface: QGIS interface object
-        focus_timer: Timer for managing window focus
-        Various data processing attributes (aoi, df, collection, etc.)
+        iface: QGIS interface object for interaction with the main application
+        focus_timer: Timer for managing window focus and activation
+        df: Main DataFrame containing raw climate data
+        dataframes_dict: Dictionary containing processed climate indices
+        df_save, df_save2, df_save3: DataFrames for export functionality
+        fig, fig2, fig3: Plotly figure objects for visualizations
+        config: Configuration dictionary for Plotly charts
     """
     
     def __init__(self, parent=None, iface=None):
         """
         Initialize the ClimaPlots dialog.
         
+        Sets up the user interface, window properties, event connections,
+        and initializes data attributes.
+        
         Args:
             parent: Parent widget (default: None)
-            iface: QGIS interface object (default: None)
+            iface: QGIS interface object for plugin integration (default: None)
         """
         super(ClimaPlotsDialog, self).__init__(parent)
         self.setupUi(self)
         self.iface = iface
         
-        # Configure window properties
+        # Configure window properties for modeless dialog
         self.setWindowFlags(
             Qt.WindowType.Window |
             Qt.WindowType.WindowCloseButtonHint |
@@ -207,43 +229,37 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         self.focus_timer = QTimer()
         self.focus_timer.timeout.connect(self.check_focus)
 
-        # Initialize window size
+        # Initialize window size after UI setup
         QTimer.singleShot(0, lambda: self.resizeEvent("small"))
 
+        # Configure Plotly chart settings
         self.config = {
             "displaylogo": False,
             "modeBarButtonsToRemove": [
-                "toImage",
-                "sendDataToCloud",
-                "zoom2d",
-                "pan2d",
-                "select2d",
-                "lasso2d",
-                "zoomIn2d",
-                "zoomOut2d",
-                "autoScale2d",
-                "resetScale2d",
-                "hoverClosestCartesian",
-                "hoverCompareCartesian",
-                "zoom3d",
-                "pan3d",
-                "orbitRotation",
-                "tableRotation",
-                "resetCameraLastSave",
-                "resetCameraDefault3d",
-                "hoverClosest3d",
-                "zoomInGeo",
-                "zoomOutGeo",
-                "resetGeo",
-                "hoverClosestGeo",
-                "hoverClosestGl2d",
-                "hoverClosestPie",
-                "toggleHover",
-                "toggleSpikelines",
-                "resetViews",
+                "toImage", "sendDataToCloud", "zoom2d", "pan2d", "select2d",
+                "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d",
+                "hoverClosestCartesian", "hoverCompareCartesian", "zoom3d", "pan3d",
+                "orbitRotation", "tableRotation", "resetCameraLastSave",
+                "resetCameraDefault3d", "hoverClosest3d", "zoomInGeo", "zoomOutGeo",
+                "resetGeo", "hoverClosestGeo", "hoverClosestGl2d", "hoverClosestPie",
+                "toggleHover", "toggleSpikelines", "resetViews",
             ],
         }
 
+        # Connect UI event signals to handler methods
+        self._connect_ui_signals()
+        
+        # Initialize data attributes
+        self._initialize_data_attributes()
+        
+        # Setup climate indices dropdown
+        self._setup_climate_indices()
+        
+        # Set initial UI state
+        self.tabWidget.setCurrentIndex(0)
+
+    def _connect_ui_signals(self):
+        """Connect UI widget signals to their respective handler methods."""
         self.tabWidget.currentChanged.connect(self.on_tab_changed)
         self.navegador.clicked.connect(self.on_navegador_clicked)
         self.navegador_2.clicked.connect(self.on_navegador_clicked_2)
@@ -252,14 +268,20 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         self.save_plot2.clicked.connect(self.save_clicked2)
         self.save_plot3.clicked.connect(self.save_clicked3)
         self.save_raw.clicked.connect(self.save_raw_clicked)
-
         self.rejected.connect(self.fun_fechou)
-        self.df = None
         self.gerar_req.clicked.connect(self.request_api)
         self.atributo.currentTextChanged.connect(self.plots1)
         self.atributo_2.currentTextChanged.connect(self.plots3)
         self.googlemaps.clicked.connect(map_tools.hybrid_function)
+        self.proxy.clicked.connect(self.open_proxy_dialog)
+
+    def _initialize_data_attributes(self):
+        """Initialize data storage attributes."""
+        self.df = None
         self.dataframes_dict = None
+
+    def _setup_climate_indices(self):
+        """Setup the climate indices dropdown with available options."""
         sheet_names = [
             'Total Annual Precipitation',
             'Annual Frost Days',
@@ -280,17 +302,21 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             'Number of Consecutive Wet Days in a Month',
             'The Standardized Precipitation Index (SPI)'
         ]
+        
         for name in sheet_names:
             self.atributo_2.addItem(name)
         self.atributo_2.setCurrentIndex(0)
-        self.tabWidget.setCurrentIndex(0)
 
+    # =========================================================================
+    # WINDOW EVENT HANDLING METHODS
+    # =========================================================================
     
     def showEvent(self, event):
         """
         Handle dialog show event.
         
-        Starts the focus timer and ensures proper window sizing.
+        Starts the focus timer and ensures proper window sizing when the dialog
+        is first shown.
         
         Args:
             event: The show event object
@@ -310,7 +336,8 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         """
         Handle dialog hide event.
         
-        Stops the focus timer to prevent unnecessary processing.
+        Stops the focus timer to prevent unnecessary processing when the dialog
+        is hidden.
         
         Args:
             event: The hide event object
@@ -344,8 +371,6 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             self.raise_()
 
     def closeEvent(self, event):
-
-
         """
         Handle dialog close event.
         
@@ -372,6 +397,11 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         """
         Handle tab change events.
         
+        Adjusts window size based on the selected tab to optimize the layout
+        for different content types.
+        
+        Args:
+            index: The index of the newly selected tab
         """
         print(f"Tab changed to index: {index}")
         if index != 0:
@@ -380,241 +410,432 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             self.resizeEvent("small")
 
     def resizeEvent(self, event):
-
-        self.setMinimumSize(0, 0)  # Remove minimum size constraint
-        self.setMaximumSize(16777215, 16777215)  # Remove maximum size constraint
+        """
+        Handle window resize events.
+        
+        Manages window sizing for different interface states (small for input,
+        big for visualization tabs).
+        
+        Args:
+            event: Resize event type ("small" or "big")
+        """
+        # Remove size constraints temporarily
+        self.setMinimumSize(0, 0)
+        self.setMaximumSize(16777215, 16777215)
 
         if event == "small":
-            self.resize(405,180)
+            self.resize(402, 210)
             self.setFixedSize(self.width(), self.height())  # Lock to small size
         elif event == "big":
             self.resize(945, 535)
             self.setFixedSize(self.width(), self.height())  # Lock to big size
 
+    # =========================================================================
+    # UTILITY AND EVENT HANDLER METHODS
+    # =========================================================================
+
+    def open_proxy_dialog(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Proxy Settings")
+        layout = QVBoxLayout(dialog)
+
+        label = QLabel("Enter proxy (e.g. http://user:pass@host:port):")
+        layout.addWidget(label)
+
+        proxy_edit = QLineEdit()
+        # Load existing proxy from QSettings if available
+        proxy = QSettings().value("climaplots/proxy", "")
+        proxy_edit.setText(proxy if proxy else "")
+        layout.addWidget(proxy_edit)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        layout.addWidget(button_box)
+
+        def accept():
+            proxy = proxy_edit.text().strip()
+            QSettings().setValue("climaplots/proxy", proxy)
+            dialog.accept()
+
+        button_box.accepted.connect(accept)
+        button_box.rejected.connect(dialog.reject)
+
+        dialog.exec_()
+
     def fun_fechou(self):
+        """
+        Handle dialog closure cleanup.
+        
+        Clears input fields, resets tab selection, and activates the pan tool
+        in QGIS when the dialog is closed or rejected.
+        """
         self.LongEdit.clear()
         self.LatEdit.clear()
         self.tabWidget.setCurrentIndex(0)
         qgis.utils.iface.actionPan().trigger()
 
+    # =========================================================================
+    # SAVE BUTTON HANDLERS
+    # =========================================================================
+
     def save_clicked(self):
-        name = (
-            f"Anual_trends_{self.atributo.currentText()}.csv"
-        )
+        """Handle save button click for annual trends data."""
+        name = f"Anual_trends_{self.atributo.currentText()}.csv"
         save_utils.save(self.df_save, name, self)
 
     def save_clicked2(self):
-        name = (
-            f"Thermopluviometric.csv"
-        )
+        """Handle save button click for thermopluviometric data."""
+        name = "Thermopluviometric.csv"
         save_utils.save(self.df_save2, name, self)
 
     def save_clicked3(self):
-        name = (
-            f"{self.atributo_2.currentText()}.csv"
-        )
+        """Handle save button click for climate indices data."""
+        name = f"{self.atributo_2.currentText()}.csv"
         save_utils.save(self.df_save3, name, self)
 
     def save_raw_clicked(self):
-        name = (
-            f"Raw_data.csv"
-        )
+        """Handle save button click for raw climate data."""
+        name = "Raw_data.csv"
         save_utils.save(self.df, name, self)
 
+    # =========================================================================
+    # NAVIGATION BUTTON HANDLERS
+    # =========================================================================
+
     def on_navegador_clicked(self):
+        """Open plot 1 (annual trends) in external browser."""
         self.fig.show()
 
     def on_navegador_clicked_2(self):
+        """Open plot 2 (thermopluviometric diagram) in external browser."""
         self.fig2.show()
 
     def on_navegador_clicked_3(self):
+        """Open plot 3 (climate indices) in external browser."""
         self.fig3.show()
 
+    # =========================================================================
+    # PLOTTING AND VISUALIZATION METHODS
+    # =========================================================================
+
     def plots1(self):
+        """
+        Generate annual trends plot with statistical analysis.
+        
+        Creates a line plot showing annual trends for the selected climate variable
+        (precipitation, min temperature, or max temperature). Includes Mann-Kendall
+        trend test and Pettitt homogeneity test results in the plot title.
+        """
         if self.df is None:
             return
+            
         atributo = self.atributo.currentText()
         df = self.df.copy()
-        # Agrupa por ano corretamente e usa a coluna 'Date' como index
+        
+        # Group data by year for annual aggregation
         df['Year'] = df['Date'].dt.year
         df_aux = df.groupby('Year')[['Precipitation']].sum()
-        df_mean = df.groupby('Year').mean()[['Min Temperature','Max Temperature']]
+        df_mean = df.groupby('Year').mean()[['Min Temperature', 'Max Temperature']]
         df_mean['Precipitation'] = df_aux['Precipitation']
         df_mean.reset_index(inplace=True)
-        # Cria coluna 'Date' para o início de cada ano
+        
+        # Create date column for the beginning of each year
         df_mean['Date'] = pd.to_datetime(df_mean['Year'].astype(str) + '-01-01')
+        
+        # Prepare data for statistical analysis
         df_plot = df_mean[['Date', atributo]].copy()
         df_plot.index = df_plot['Date']
         df_plot = df_plot[[atributo]].astype(float)
+        
+        # Perform statistical tests
         result_mk = mk.original_test(df_plot)
         result_pettitt = hg.pettitt_test(df_plot)
 
-        title1 = 'Mann Kendall Test: trend=<b>'+result_mk.trend+'</b>, alpha=0.05'+', p-value='+str(round(result_mk.p, 4))
-        title2 = None
+        # Create plot titles with test results
+        title1 = (f'Mann Kendall Test: trend=<b>{result_mk.trend}</b>, alpha=0.05, '
+                 f'p-value={round(result_mk.p, 4)}')
+        
         if result_pettitt.h:
-            title2 = 'Pettitt Test: data is <b>nonhomogeneous</b>, probable change point location='+str(result_pettitt.cp)[:4]+', alpha=0.05'+', p-value='+str(round(result_pettitt.p, 4))
+            title2 = (f'Pettitt Test: data is <b>nonhomogeneous</b>, '
+                     f'probable change point location={str(result_pettitt.cp)[:4]}, '
+                     f'alpha=0.05, p-value={round(result_pettitt.p, 4)}')
         else:
-            title2 = 'Pettitt Test: data is <b>homogeneous</b>, alpha=0.05'+', p-value='+str(round(result_pettitt.p, 4))
+            title2 = (f'Pettitt Test: data is <b>homogeneous</b>, '
+                     f'alpha=0.05, p-value={round(result_pettitt.p, 4)}')
 
-        title = title1+'<br>'+title2
+        title = title1 + '<br>' + title2
 
-        self.fig = px.line(df_mean, x="Date", y=[atributo], title='<b>'+atributo+'</b>  (Long: '+self.LongEdit.text() + ' Lat: '+self.LatEdit.text()+') <br>'+title)
+        # Create the plot
+        self.fig = px.line(
+            df_mean, 
+            x="Date", 
+            y=[atributo], 
+            title=(f'<b>{atributo}</b> (Long: {self.LongEdit.text()} '
+                  f'Lat: {self.LatEdit.text()}) <br>{title}')
+        )
 
         self.fig.update_layout(showlegend=False)
 
+        # Set appropriate y-axis labels
         if atributo == "Precipitation":
             self.fig.update_yaxes(title_text="Precipitation (mm) - Annual Total")
-        if atributo == "Min Temperature":
+        elif atributo == "Min Temperature":
             self.fig.update_yaxes(title_text="Min Temperature (ºC)")
-        if atributo == "Max Temperature":
+        elif atributo == "Max Temperature":
             self.fig.update_yaxes(title_text="Max Temperature (ºC)")
 
+        # Render plot in web view
         self.webView_1.setHtml(
             self.fig.to_html(include_plotlyjs="cdn", config=self.config)
         )
-        print('ok plot1')
+        print('Plot 1 (Annual Trends) generated successfully')
 
+        # Store data for export
         self.df_save = df_mean
 
     def plots2(self):
+        """
+        Generate thermopluviometric diagram.
+        
+        Creates a dual-axis plot showing monthly precipitation (bars) and
+        maximum temperature (line) to visualize the climate pattern throughout
+        the year.
+        """
         if self.df is None:
             return
-        print('plot2 começou')
+            
+        print('Generating thermopluviometric diagram...')
 
         df = self.df.copy()
-        df_aux = df.groupby([(df.Date.dt.year), (df.Date.dt.month)]).sum(numeric_only=True)[['Precipitation']]
-        df = df.groupby([(df.Date.dt.year), (df.Date.dt.month)]).mean(numeric_only=True)[['Min Temperature','Max Temperature']]
+        
+        # Group data by year and month for monthly averages
+        df_aux = df.groupby([
+            df.Date.dt.year, 
+            df.Date.dt.month
+        ]).sum(numeric_only=True)[['Precipitation']]
+        
+        df = df.groupby([
+            df.Date.dt.year, 
+            df.Date.dt.month
+        ]).mean(numeric_only=True)[['Min Temperature', 'Max Temperature']]
+        
         df['Precipitation'] = df_aux['Precipitation']
         df.reset_index(level=1, inplace=True)
+        
+        # Calculate monthly averages across all years
         df = df.groupby(df.Date).mean()
         df.reset_index(inplace=True)
-        df.rename(columns = {'Date':'Month'}, inplace = True)
+        df.rename(columns={'Date': 'Month'}, inplace=True)
 
+        # Create subplot with secondary y-axis
         self.fig2 = make_subplots(specs=[[{"secondary_y": True}]])
-        # Add traces
+        
+        # Add precipitation bars (primary y-axis)
         self.fig2.add_trace(
-            go.Bar(x=df['Month'], y=df['Precipitation'], name='Precipitation'),
+            go.Bar(
+                x=df['Month'], 
+                y=df['Precipitation'], 
+                name='Precipitation'
+            ),
             secondary_y=False,
         )
+        
+        # Add maximum temperature line (secondary y-axis)
         self.fig2.add_trace(
-            go.Line(x=df['Month'], y=df['Max Temperature'], name='Max Temperature'),
+            go.Scatter(
+                x=df['Month'], 
+                y=df['Max Temperature'], 
+                mode='lines+markers',
+                name='Max Temperature'
+            ),
             secondary_y=True,
         )
+        
+        # Update layout and titles
         self.fig2.update_layout(
-            title_text="<b>Thermo-pluviometric diagram</b>  (Long: "+self.LongEdit.text() + " Lat: "+self.LatEdit.text()+")"
+            title_text=(f"<b>Thermo-pluviometric diagram</b> "
+                       f"(Long: {self.LongEdit.text()} Lat: {self.LatEdit.text()})")
         )
 
-        # Set x-axis title
+        # Set x-axis title and tick configuration
         self.fig2.update_xaxes(title_text="Month")
-
         self.fig2.update_layout(
-        xaxis = dict(
-            tickmode = 'linear',
-        )
+            xaxis=dict(tickmode='linear')
         )
 
         # Set y-axes titles
-        self.fig2.update_yaxes(title_text="Max Temperature (ºC)", secondary_y=True)
-        self.fig2.update_yaxes(title_text="Precipitation (mm)", secondary_y=False)
+        self.fig2.update_yaxes(
+            title_text="Max Temperature (ºC)", 
+            secondary_y=True
+        )
+        self.fig2.update_yaxes(
+            title_text="Precipitation (mm)", 
+            secondary_y=False
+        )
 
+        # Render plot in web view
         self.webView_2.setHtml(
             self.fig2.to_html(include_plotlyjs="cdn", config=self.config)
         )
-        print('ok plot2')
+        print('Thermopluviometric diagram generated successfully')
 
+        # Store data for export
         self.df_save2 = df
 
     def plots3_compute(self):
+        """
+        Compute climate indices using climdex library.
+        
+        Calculates various climate indices including temperature and precipitation
+        indices according to the ETCCDI (Expert Team on Climate Change Detection
+        and Indices) recommendations. Stores results in dataframes_dict for
+        later visualization and export.
+        """
         if self.df is None:
             return
-        print('plot3 compute começou')
+            
+        print('Computing climate indices...')
         df = self.df.copy()
-        df_aux = df.copy()       
+        df_aux = df.copy()
+        
+        # Prepare data for xarray conversion
         df.set_index('Date', inplace=True)
         ds = df[['Precipitation', 'Max Temperature', 'Min Temperature']].copy().to_xarray()
 
+        # Initialize climate indices calculators
         precip_indices = pdex.indices(time_dim='Date')
         temp_indices = tdex.indices(time_dim='Date')
 
-        # Temperature Indices using 'Max Temperature' and 'Min Temperature'
-        frost_days_df = temp_indices.annual_frost_days(ds, varname='Min Temperature').to_dataframe()
+        # =====================================================================
+        # TEMPERATURE INDICES CALCULATION
+        # =====================================================================
+        
+        # Annual frost days (days with min temp < 0°C)
+        frost_days_df = temp_indices.annual_frost_days(
+            ds, varname='Min Temperature'
+        ).to_dataframe()
         frost_days_df.columns = ['Annual Frost Days']
-        # frost_days_df.to_csv(name +' - '+ 'Annual Frost Days.csv')
 
-        tropical_nights_df = temp_indices.annual_tropical_nights(ds, varname='Min Temperature').to_dataframe()
+        # Annual tropical nights (days with min temp > 20°C)
+        tropical_nights_df = temp_indices.annual_tropical_nights(
+            ds, varname='Min Temperature'
+        ).to_dataframe()
         tropical_nights_df.columns = ['Annual Tropical Nights']
-        # tropical_nights_df.to_csv(name +' - '+ 'Annual Tropical Nights.csv')
 
-        icing_days_df = temp_indices.annual_icing_days(ds, varname='Max Temperature').to_dataframe()
+        # Annual icing days (days with max temp < 0°C)
+        icing_days_df = temp_indices.annual_icing_days(
+            ds, varname='Max Temperature'
+        ).to_dataframe()
         icing_days_df.columns = ['Annual Icing Days']
-        # icing_days_df.to_csv(name +' - '+ 'Annual Icing Days.csv')
 
-        summer_days_df = temp_indices.annual_summer_days(ds, varname='Max Temperature').to_dataframe()
+        # Annual summer days (days with max temp > 25°C)
+        summer_days_df = temp_indices.annual_summer_days(
+            ds, varname='Max Temperature'
+        ).to_dataframe()
         summer_days_df.columns = ['Annual Summer Days']
-        # summer_days_df.to_csv(name +' - '+ 'Annual Summer Days.csv')
 
-        txx_df = temp_indices.monthly_txx(ds, varname='Max Temperature').to_dataframe()[['Max Temperature']]
+        # Monthly temperature extremes
+        txx_df = temp_indices.monthly_txx(
+            ds, varname='Max Temperature'
+        ).to_dataframe()[['Max Temperature']]
         txx_df.columns = ['Monthly Maximum Temperature']
-        # txx_df.to_csv(name +' - '+ 'Monthly Maximum Temperature.csv')
 
-        txn_df = temp_indices.monthly_txn(ds, varname='Max Temperature').to_dataframe()[['Max Temperature']]
+        txn_df = temp_indices.monthly_txn(
+            ds, varname='Max Temperature'
+        ).to_dataframe()[['Max Temperature']]
         txn_df.columns = ['Monthly Minimum Temperature of Maximum Temperatures']
-        # txn_df.to_csv(name +' - '+ 'Monthly Minimum Temperature of Maximum Temperatures.csv')
 
-        tnx_df = temp_indices.monthly_tnx(ds, varname='Min Temperature').to_dataframe()[['Min Temperature']]
+        tnx_df = temp_indices.monthly_tnx(
+            ds, varname='Min Temperature'
+        ).to_dataframe()[['Min Temperature']]
         tnx_df.columns = ['Monthly Maximum Temperature of Minimum Temperatures']
-        # tnx_df.to_csv(name +' - '+ 'Monthly Maximum Temperature of Minimum Temperatures.csv')
 
-        tnn_df = temp_indices.monthly_tnn(ds, varname='Min Temperature').to_dataframe()[['Min Temperature']]
+        tnn_df = temp_indices.monthly_tnn(
+            ds, varname='Min Temperature'
+        ).to_dataframe()[['Min Temperature']]
         tnn_df.columns = ['Monthly Minimum Temperature']
-        # tnn_df.to_csv(name +' - '+ 'Monthly Minimum Temperature.csv')
 
-        dtr_df = temp_indices.daily_temperature_range(ds, ds, min_varname='Min Temperature', max_varname='Max Temperature').to_dataframe(name="DTR")
+        # Daily temperature range
+        dtr_df = temp_indices.daily_temperature_range(
+            ds, ds, 
+            min_varname='Min Temperature', 
+            max_varname='Max Temperature'
+        ).to_dataframe(name="DTR")
         dtr_df.columns = ['Daily Temperature Range']
-        # dtr_df.to_csv(name +' - '+ 'Daily Temperature Range.csv')
-        rx1day_df = precip_indices.monthly_rx1day(ds, varname='Precipitation').to_dataframe()
+
+        # =====================================================================
+        # PRECIPITATION INDICES CALCULATION
+        # =====================================================================
+        
+        # Maximum 1-day and 5-day precipitation amounts
+        rx1day_df = precip_indices.monthly_rx1day(
+            ds, varname='Precipitation'
+        ).to_dataframe()
         rx1day_df.columns = ['Monthly Maximum 1-day Precipitation']
-        # rx1day_df.to_csv(name +' - '+ 'Monthly Maximum 1-day Precipitation.csv')
 
-        rx5day_df = precip_indices.monthly_rx5day(ds, varname='Precipitation').to_dataframe()
+        rx5day_df = precip_indices.monthly_rx5day(
+            ds, varname='Precipitation'
+        ).to_dataframe()
         rx5day_df.columns = ['Monthly Maximum 5-day Precipitation']
-        # rx5day_df.to_csv(name +' - '+ 'Monthly Maximum 5-day Precipitation.csv')
 
-        r10mm_df = precip_indices.annual_r10mm(ds, varname='Precipitation').to_dataframe()
+        # Heavy precipitation day counts
+        r10mm_df = precip_indices.annual_r10mm(
+            ds, varname='Precipitation'
+        ).to_dataframe()
         r10mm_df.columns = ['Annual Count of Days when Precipitation Exceeds 10mm']
-        # r10mm_df.to_csv(name +' - '+ 'Annual Count of Days when Precipitation Exceeds 10mm.csv')
 
-        r20mm_df = precip_indices.annual_r20mm(ds, varname='Precipitation').to_dataframe()
+        r20mm_df = precip_indices.annual_r20mm(
+            ds, varname='Precipitation'
+        ).to_dataframe()
         r20mm_df.columns = ['Annual Count of Days when Precipitation Exceeds 20mm']
-        # r20mm_df.to_csv(name +' - '+ 'Annual Count of Days when Precipitation Exceeds 20mm.csv')
 
-        prcptot_annual_df = precip_indices.prcptot(ds, period='1Y', varname='Precipitation').to_dataframe()
+        # Total annual precipitation
+        prcptot_annual_df = precip_indices.prcptot(
+            ds, period='1Y', varname='Precipitation'
+        ).to_dataframe()
         prcptot_annual_df.columns = ['Total Annual Precipitation']
-        # prcptot_annual_df.to_csv(name +' - '+ 'Total Annual Precipitation.csv')
 
-        sdii_value_df = precip_indices.sdii(ds, period='1M', varname='Precipitation').to_dataframe()
+        # Simple precipitation intensity index
+        sdii_value_df = precip_indices.sdii(
+            ds, period='1M', varname='Precipitation'
+        ).to_dataframe()
         sdii_value_df.columns = ['Simple Precipitation Intensity Index']
-        # sdii_value_df.to_csv(name +' - '+ 'Simple Precipitation Intensity Index.csv')
 
-        cdd_value_df = precip_indices.cdd(ds, period='1M', varname='Precipitation').to_dataframe()
+        # Consecutive dry and wet days
+        cdd_value_df = precip_indices.cdd(
+            ds, period='1M', varname='Precipitation'
+        ).to_dataframe()
         cdd_value_df.columns = ['Number of Consecutive Dry Days in a Month']
-        # cdd_value_df.to_csv(name +' - '+ 'Number of Consecutive Dry Days in a Month.csv')
 
-        cwd_value_df = precip_indices.cwd(ds, period='1M', varname='Precipitation').to_dataframe()
+        cwd_value_df = precip_indices.cwd(
+            ds, period='1M', varname='Precipitation'
+        ).to_dataframe()
         cwd_value_df.columns = ['Number of Consecutive Wet Days in a Month']
 
-        df_aux['Accumulated_Precipitation'] = df_aux['Precipitation'].rolling(window=90).sum()
+        # =====================================================================
+        # STANDARDIZED PRECIPITATION INDEX (SPI) CALCULATION
+        # =====================================================================
+        
+        # Calculate 90-day rolling precipitation sum
+        df_aux['Accumulated_Precipitation'] = df_aux['Precipitation'].rolling(
+            window=90
+        ).sum()
         df_aux.dropna(inplace=True)
+        
+        # Fit gamma distribution to accumulated precipitation
         params = gamma.fit(df_aux['Accumulated_Precipitation'], floc=0)
-        df_aux['Cumulative_Probability'] = gamma.cdf(df_aux['Accumulated_Precipitation'], *params)
-        # Transform the cumulative probabilities to the standard normal distribution to get the SPI values
+        df_aux['Cumulative_Probability'] = gamma.cdf(
+            df_aux['Accumulated_Precipitation'], *params
+        )
+        
+        # Transform to standard normal distribution for SPI values
         df_aux['SPI'] = norm.ppf(df_aux['Cumulative_Probability'])
-        # Display the first few rows with the accumulated precipitation and SPI values
+        
         spi_value_df = df_aux[['SPI']].copy()
         spi_value_df.columns = ['The Standardized Precipitation Index (SPI)']
 
-        print('ok plot3 compute')
+        print('Climate indices computation completed successfully')
 
+        # Store all computed indices in dictionary for later access
         self.dataframes_dict = {
             'Annual Frost Days': frost_days_df,
             'Annual Tropical Nights': tropical_nights_df,
@@ -635,50 +856,176 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             'Number of Consecutive Wet Days in a Month': cwd_value_df,
             'The Standardized Precipitation Index (SPI)': spi_value_df,
         }
-        print('ok plot3 compute')
 
     def plots3(self):
+        """
+        Generate climate indices visualization.
+        
+        Creates a line plot for the selected climate index from the computed
+        dataframes dictionary. Adds a year column to the data for better
+        temporal analysis and export functionality.
+        """
         if self.df is None:
             return
-        print('plot3 começou')
+            
+        print('Generating climate indices plot...')
+        
+        # Get the selected climate index data
         df_plot = self.dataframes_dict[self.atributo_2.currentText()]
-        print(self.atributo_2.currentText())
-        self.fig3 = px.line(df_plot, y=self.atributo_2.currentText(), title='<b>'+self.atributo_2.currentText()+'</b>  (Long: '+self.LongEdit.text() + ' Lat: '+self.LatEdit.text()+')')
+        print(f'Selected index: {self.atributo_2.currentText()}')
+        
+        # Create the line plot
+        self.fig3 = px.line(
+            df_plot, 
+            y=self.atributo_2.currentText(), 
+            title=(f'<b>{self.atributo_2.currentText()}</b> '
+                  f'(Long: {self.LongEdit.text()} Lat: {self.LatEdit.text()})')
+        )
         self.fig3.update_layout(showlegend=False)
+        
+        # Render plot in web view
         self.webView_3.setHtml(
             self.fig3.to_html(include_plotlyjs="cdn", config=self.config)
         )
-        # Adiciona coluna 'Year' ao DataFrame
+        
+        # Add year column to DataFrame for better analysis and export
         if 'Date' in df_plot.columns:
             df_plot['Year'] = pd.to_datetime(df_plot['Date']).dt.year
         elif df_plot.index.name == 'Date':
             df_plot['Year'] = pd.to_datetime(df_plot.index).year
+        
+        # Store data for export
         self.df_save3 = df_plot
-        print('ok plot3')
+        print('Climate indices plot generated successfully')
+
+    # =========================================================================
+    # DATA ACQUISITION METHODS
+    # =========================================================================
 
     def actual_request_api(self):
-        endtime = str(int(datetime.date.today().strftime("%Y"))-1)+'1231'
-        base_url = (r"https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,PRECTOTCORR,T2M_MIN&community=RE&longitude={longitude}&latitude={latitude}&start=19810101&end="+endtime+"&format=JSON")
-        api_request_url = base_url.format(longitude=float(self.LongEdit.text()), latitude = float(self.LatEdit.text()))
-        response = requests.get(url=api_request_url, verify=True, timeout=1000)
+        """
+        Fetch climate data from NASA POWER API.
+        
+        Retrieves daily climate data including maximum temperature, minimum 
+        temperature, and precipitation from NASA's POWER (Prediction of 
+        Worldwide Energy Resources) database for the specified coordinates.
+        
+        Returns:
+            pandas.DataFrame: Climate data with Date, Precipitation, 
+                            Min Temperature, and Max Temperature columns
+        """
+        # Calculate end date (previous year to ensure complete data)
+        endtime = str(int(datetime.date.today().strftime("%Y")) - 1) + '1231'
+        
+        # Construct API request URL
+        base_url = (
+            r"https://power.larc.nasa.gov/api/temporal/daily/point?"
+            r"parameters=T2M_MAX,PRECTOTCORR,T2M_MIN&community=RE&"
+            r"longitude={longitude}&latitude={latitude}&"
+            r"start=19810101&end=" + endtime + "&format=JSON"
+        )
+        
+        api_request_url = base_url.format(
+            longitude=float(self.LongEdit.text()), 
+            latitude=float(self.LatEdit.text())
+        )
+        
+        # Prepare proxy settings for requests
+        proxies = {}
+        proxy = QSettings().value("climaplots/proxy", "")
+        if proxy:
+            proxies = {
+                'http': proxy,
+                'https': proxy
+            }
+            print(f"Using proxy: {proxy}")
+        
+        # Make API request with timeout and proxy support
+        # Try with proxy first, then without proxy if it fails
+        response = None
+        try:
+            if proxies:
+                print("Attempting request with proxy...")
+                response = requests.get(
+                    url=api_request_url, 
+                    verify=True, 
+                    timeout=1000,
+                    proxies=proxies
+                )
+            else:
+                # No proxy configured, make direct request
+                response = requests.get(
+                    url=api_request_url, 
+                    verify=True, 
+                    timeout=1000
+                )
+        except Exception as e:
+            if proxies:
+                print(f"Request with proxy failed: {e}")
+                print("Retrying without proxy...")
+                try:
+                    response = requests.get(
+                        url=api_request_url, 
+                        verify=True, 
+                        timeout=1000
+                    )
+                    print("Request successful without proxy")
+                except Exception as e2:
+                    print(f"Request failed even without proxy: {e2}")
+                    raise e2
+            else:
+                print(f"Direct request failed: {e}")
+                raise e
         content = json.loads(response.content.decode('utf-8'))
+        
+        # Convert to DataFrame and rename columns
         df = pd.DataFrame.from_dict(content['properties']['parameter'])
-        df = df.reset_index().rename(columns={'index': 'Date', 'PRECTOTCORR': 'Precipitation', 'T2M_MIN': 'Min Temperature', 'T2M_MAX': 'Max Temperature'})
+        df = df.reset_index().rename(columns={
+            'index': 'Date', 
+            'PRECTOTCORR': 'Precipitation', 
+            'T2M_MIN': 'Min Temperature', 
+            'T2M_MAX': 'Max Temperature'
+        })
+        
+        # Convert date column to datetime
         df.Date = pd.to_datetime(df.Date)
-        print('ok request') 
+        
+        print('Climate data request completed successfully')
         print(df.head())
-        return df      
+        return df
 
     def request_api(self):
+        """
+        Main method to request climate data and generate all visualizations.
+        
+        Handles the complete workflow from data acquisition to plot generation:
+        1. Fetches data from NASA POWER API
+        2. Generates annual trends plot with statistics
+        3. Creates thermopluviometric diagram
+        4. Computes climate indices
+        5. Generates climate indices plot
+        6. Switches to visualization tab
+        """
+        # Show loading cursor
         QApplication.setOverrideCursor(Qt.WaitCursor)
+        
         try:
+            # Fetch climate data
             self.df = self.actual_request_api()
-            self.plots1()
-            self.plots2()
-            self.plots3_compute()
-            self.plots3()
-            self.tabWidget.setCurrentIndex(1)            
+            
+            # Generate all plots and analyses
+            self.plots1()                  # Annual trends with statistics
+            self.plots2()                  # Thermopluviometric diagram
+            self.plots3_compute()          # Compute climate indices
+            self.plots3()                  # Climate indices visualization
+            
+            # Switch to visualization tab
+            self.tabWidget.setCurrentIndex(1)
+            
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"An error occurred during data processing: {e}")
+            # Could add user notification here
+            
         finally:
+            # Restore normal cursor
             QApplication.restoreOverrideCursor()

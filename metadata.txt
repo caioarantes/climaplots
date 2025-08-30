@@ -7,12 +7,12 @@
 [general]
 name=ClimaPlots
 qgisMinimumVersion=3.0
-description=Climate analysis with NASA POWER data   
+description=Analyze and visualize climate data from NASA POWER, including temperature, precipitation, and solar radiation, directly within QGIS.
 version=0.1
 author=Caio Arantes
 email=caiosimplicioarantes@gmail.com
 
-about=Climate analysis with NASA POWER data
+about=ClimaPlots enables users to access, analyze, and plot NASA POWER climate datasets in QGIS, supporting spatial and temporal exploration for environmental research and decision-making.
 
 tracker=https://github.com/caioarantes/climaplots/issues
 repository=https://github.com/caioarantes/climaplots
@@ -29,7 +29,7 @@ changelog=
 tags=python,sentinel,radar,sar,google earth engine,remote sensing,raster
 
 homepage=https://caioarantes.github.io/climaplots/
-category=Raster
+category=Climate, Visualization
 icon=icon.png
 # experimental flag
 experimental=False

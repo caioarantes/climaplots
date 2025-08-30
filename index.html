@@ -5,30 +5,208 @@
     <title>About the ClimaPlots Plugin</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 2em; background: #f9f9f9; }
-        h1 { color: #2c3e50; }
-        p, ul { color: #333; }
+        h1, h2 { color: #2c3e50; }
+        h2 { margin-top: 2em; border-bottom: 2px solid #3498db; padding-bottom: 0.5em; }
+        p, ul, li { color: #333; line-height: 1.6; }
         ul { margin-top: 1em; }
-        .container { max-width: 700px; margin: auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .container { max-width: 900px; margin: auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .index-item { margin-bottom: 1.5em; }
+        .index-name { font-weight: bold; color: #2980b9; }
+        .index-description { margin-top: 0.5em; }
+        .category { background: #ecf0f1; padding: 1em; border-radius: 5px; margin: 1em 0; }
+        .demo-section { text-align: center; margin: 2em 0; padding: 1.5em; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
+        .demo-gif { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .demo-caption { margin-top: 1em; font-style: italic; color: #666; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>ClimaPlots - QGIS Plugin</h1>
         <p>
-            <strong>ClimaPlots</strong> is a plugin for QGIS that allows you to calculate and visualize climate indices for selected point on the map. It facilitates the analysis of meteorological and environmental data, integrating statistical tools and interactive charts directly into the QGIS interface.
+            <strong>ClimaPlots</strong> is a plugin for QGIS that allows you to calculate and visualize climate indices for selected points on the map. It facilitates the analysis of meteorological and environmental data, integrating statistical tools and interactive charts directly into the QGIS interface.
+        </p>
+
+        <div class="demo-section">
+            <h2>How It Works</h2>
+            <img src="medias/climateplots.gif" alt="ClimaPlots Plugin Demonstration" class="demo-gif">
+            <div class="demo-caption">
+                Interactive demonstration showing how to use ClimaPlots: select a point on the map, fetch climate data, and visualize climate indices with interactive charts.
+            </div>
+        </div>
+        
+        <h2>Key Features</h2>
+        <ul>
+            <li>Calculates climate indices following ETCCDI (Expert Team on Climate Change Detection and Indices) standards</li>
+            <li>Generates interactive charts for temporal analysis of climate variables</li>
+            <li>Allows you to select points on the map to obtain specific latitude and longitude data</li>
+            <li>Integrates statistical tests such as Mann-Kendall and Pettitt for trend and change analysis</li>
+            <li>Provides data export functionality in CSV format</li>
+        </ul>
+
+        <h2>Climate Indices Calculated</h2>
+        
+        <div class="category">
+            <h3>Temperature Indices</h3>
+            
+            <div class="index-item">
+                <div class="index-name">Annual Frost Days (FD)</div>
+                <div class="index-description">
+                    Annual count of days when the daily minimum temperature is below 0°C. This index is important for agricultural planning and understanding freeze risk.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Annual Tropical Nights (TR)</div>
+                <div class="index-description">
+                    Annual count of days when the daily minimum temperature is above 20°C. High values indicate warm nights that can affect human comfort and energy consumption.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Annual Icing Days (ID)</div>
+                <div class="index-description">
+                    Annual count of days when the daily maximum temperature is below 0°C. These extremely cold days are important for understanding severe winter conditions.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Annual Summer Days (SU)</div>
+                <div class="index-description">
+                    Annual count of days when the daily maximum temperature exceeds 25°C. This index helps assess warm weather patterns and potential heat stress.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Monthly Maximum Temperature (TXx)</div>
+                <div class="index-description">
+                    The highest daily maximum temperature recorded in each month. This extreme temperature index helps identify the most intense heat events.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Monthly Minimum Temperature of Maximum Temperatures (TXn)</div>
+                <div class="index-description">
+                    The lowest daily maximum temperature recorded in each month. This index shows the coolest daytime temperatures within each month.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Monthly Maximum Temperature of Minimum Temperatures (TNx)</div>
+                <div class="index-description">
+                    The highest daily minimum temperature recorded in each month. This indicates the warmest nighttime temperatures.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Monthly Minimum Temperature (TNn)</div>
+                <div class="index-description">
+                    The lowest daily minimum temperature recorded in each month. This extreme cold index identifies the coldest nights.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Daily Temperature Range (DTR)</div>
+                <div class="index-description">
+                    The average difference between daily maximum and minimum temperatures. High DTR values indicate large diurnal temperature variations, which can affect agriculture and human comfort.
+                </div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h3>Precipitation Indices</h3>
+            
+            <div class="index-item">
+                <div class="index-name">Monthly Maximum 1-day Precipitation (RX1day)</div>
+                <div class="index-description">
+                    The highest amount of precipitation recorded in a single day within each month. This index identifies extreme precipitation events that can cause flooding.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Monthly Maximum 5-day Precipitation (RX5day)</div>
+                <div class="index-description">
+                    The maximum cumulative precipitation over any 5 consecutive days within each month. This index helps assess prolonged heavy rainfall events.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Annual Count of Days when Precipitation Exceeds 10mm (R10mm)</div>
+                <div class="index-description">
+                    Annual number of days with precipitation ≥ 10mm. This moderate precipitation threshold is useful for understanding wet day frequency.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Annual Count of Days when Precipitation Exceeds 20mm (R20mm)</div>
+                <div class="index-description">
+                    Annual number of days with precipitation ≥ 20mm. This heavy precipitation threshold helps identify intense rainfall events.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Total Annual Precipitation (PRCPTOT)</div>
+                <div class="index-description">
+                    Sum of all precipitation in a year from days with precipitation ≥ 1mm. This fundamental index shows annual rainfall totals.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Simple Precipitation Intensity Index (SDII)</div>
+                <div class="index-description">
+                    Average precipitation on wet days (≥ 1mm). Calculated as total precipitation divided by the number of wet days. Higher values indicate more intense rainfall when it occurs.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Number of Consecutive Dry Days in a Month (CDD)</div>
+                <div class="index-description">
+                    Maximum number of consecutive days with precipitation < 1mm within each month. This index helps assess drought conditions and dry spells.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">Number of Consecutive Wet Days in a Month (CWD)</div>
+                <div class="index-description">
+                    Maximum number of consecutive days with precipitation ≥ 1mm within each month. This index identifies sustained wet periods.
+                </div>
+            </div>
+
+            <div class="index-item">
+                <div class="index-name">The Standardized Precipitation Index (SPI)</div>
+                <div class="index-description">
+                    A drought index that compares precipitation for a specific time period to the long-term average. Values below -1 indicate drought conditions, while values above +1 indicate wet conditions. SPI is calculated using gamma distribution fitting.
+                </div>
+            </div>
+        </div>
+
+        <h2>Statistical Analysis</h2>
+        <p>
+            ClimaPlots integrates advanced statistical tests to analyze climate trends:
         </p>
         <ul>
-            <li>Calculates indices such as total annual precipitation, frost days, tropical nights, summer days, among others.</li>
-            <li>Generates interactive charts for temporal analysis of climate variables.</li>
-            <li>Allows you to select points on the map to obtain specific latitude and longitude data.</li>
-            <li>Integrates statistical tests such as Mann-Kendall and Pettitt for trend and change analysis.</li>
-            <li>Provides visualization of layers like Google Hybrid directly in QGIS.</li>
+            <li><strong>Mann-Kendall Test:</strong> Non-parametric test for detecting monotonic trends in time series data</li>
+            <li><strong>Pettitt Test:</strong> Non-parametric test for detecting change points in time series</li>
+            <li><strong>Trend Analysis:</strong> Identifies increasing or decreasing patterns in climate variables over time</li>
         </ul>
+
+        <h2>Data Source</h2>
         <p>
-            The goal of ClimaPlots is to simplify the processing and visualization of climate data, making these analyses accessible to GIS users without the need for advanced programming.
+            Climate data is obtained from NASA POWER (Prediction of Worldwide Energy Resources) API, which provides:
         </p>
+        <ul>
+            <li>Global coverage with 0.5° × 0.625° spatial resolution</li>
+            <li>Daily meteorological data from 1981 to near real-time</li>
+            <li>Temperature (minimum and maximum) and precipitation data</li>
+        </ul>
+
+        <p>
+            The goal of ClimaPlots is to simplify the processing and visualization of climate data, making these analyses accessible to GIS users without the need for advanced programming knowledge. All indices follow international ETCCDI standards for climate change detection and monitoring.
+        </p>
+        
         <p>
             <em>Developed by Caio Arantes &mdash; 2025</em>
+            <br>
+            <a href="https://www.linkedin.com/in/caioarantes/" target="_blank">LinkedIn: Caio Arantes</a>
         </p>
     </div>
 </body>
