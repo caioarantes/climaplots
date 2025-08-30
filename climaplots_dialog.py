@@ -159,6 +159,7 @@ from qgis.PyQt.QtWidgets import (
 
 from qgis.PyQt import uic
 import os
+import webbrowser
 
 
 # =============================================================================
@@ -274,11 +275,16 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         self.atributo_2.currentTextChanged.connect(self.plots3)
         self.googlemaps.clicked.connect(map_tools.hybrid_function)
         self.proxy.clicked.connect(self.open_proxy_dialog)
+        self.learn.clicked.connect(self.open_learn_dialog)
 
     def _initialize_data_attributes(self):
         """Initialize data storage attributes."""
         self.df = None
         self.dataframes_dict = None
+
+    def open_learn_dialog(self):
+        """Open the learn dialog."""
+        webbrowser.open("https://caioarantes.github.io/climaplots/")
 
     def _setup_climate_indices(self):
         """Setup the climate indices dropdown with available options."""
