@@ -20,26 +20,30 @@
         
         /* Language selector styles */
         .language-selector {
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
             margin: 0 auto 2em auto;
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 15px;
-            max-width: 300px;
+            max-width: 400px;
         }
         .language-btn {
             background: #3498db;
             color: white;
             border: none;
             padding: 10px 16px;
-            margin: 0 4px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
             transition: background-color 0.3s;
             min-width: 80px;
+            flex-shrink: 0;
         }
         .language-btn:hover {
             background: #2980b9;
@@ -61,6 +65,7 @@
             <button class="language-btn active" onclick="switchLanguage('en')" id="btn-en">English</button>
             <button class="language-btn" onclick="switchLanguage('pt')" id="btn-pt">Português</button>
             <button class="language-btn" onclick="switchLanguage('fr')" id="btn-fr">Français</button>
+            <button class="language-btn" onclick="switchLanguage('es')" id="btn-es">Español</button>
         </div>
 
         <!-- ENGLISH VERSION -->
@@ -698,6 +703,218 @@
                 <a href="https://github.com/caioarantes/climaplots" target="_blank" style="color:#1d6fa5; font-weight:bold;">github.com/caioarantes/climaplots</a>
             </p>
         </div>
+
+        <!-- SPANISH VERSION -->
+        <div class="lang" id="lang-es">
+            <div style="display: flex; align-items: center; gap: 1em; margin-bottom: 1em;">
+                <img src="icon.png" alt="Icono ClimaPlots" style="width: 64px; height: 64px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);">
+                <h1 style="margin: 0;">ClimaPlots - Plugin QGIS</h1>
+            </div>
+            <p>
+                <strong>ClimaPlots</strong> es un plugin para QGIS que permite calcular y visualizar índices climáticos para puntos seleccionados en el mapa. Facilita el análisis de datos meteorológicos y ambientales, integrando herramientas estadísticas y gráficos interactivos directamente en la interfaz de QGIS.
+            </p>
+
+            <div class="demo-section">
+                <h2>Cómo Funciona</h2>
+                <img src="medias/climateplots.gif" alt="Demostración del Plugin ClimaPlots" class="demo-gif">
+                <div class="demo-caption">
+                    Demostración interactiva mostrando cómo usar ClimaPlots: seleccione un punto en el mapa, obtenga datos climáticos y visualice índices climáticos con gráficos interactivos.
+                </div>
+            </div>
+            
+            <h2>Funcionalidades Principales</h2>
+            <ul>
+                <li>
+                    Calcula índices climáticos siguiendo los estándares 
+                    <a href="https://etccdi.pacificclimate.org/list_27_indices.shtml" target="_blank">
+                        ETCCDI (Expert Team on Climate Change Detection and Indices)
+                    </a>
+                </li>
+                <li>Genera gráficos interactivos para análisis temporal de variables climáticas</li>
+                <li>Permite seleccionar puntos en el mapa para obtener datos específicos de latitud y longitud</li>
+                <li>Integra pruebas estadísticas como Mann-Kendall y Pettitt para análisis de tendencias y cambios</li>
+                <li>Proporciona funcionalidad de exportación de datos en formato CSV</li>
+            </ul>
+
+            <h2>Índices Climáticos Calculados</h2>
+            
+            <div class="category">
+                <h3>Índices de Temperatura</h3>
+                
+                <div class="index-item">
+                    <div class="index-name">Días de Helada Anuales (FD)</div>
+                    <div class="index-description">
+                        Recuento anual de días cuando la temperatura mínima diaria está por debajo de 0°C. Este índice es importante para la planificación agrícola y comprensión del riesgo de congelación.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Noches Tropicales Anuales (TR)</div>
+                    <div class="index-description">
+                        Recuento anual de días cuando la temperatura mínima diaria está por encima de 20°C. Valores altos indican noches cálidas que pueden afectar el confort humano y el consumo de energía.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Días de Hielo Anuales (ID)</div>
+                    <div class="index-description">
+                        Recuento anual de días cuando la temperatura máxima diaria está por debajo de 0°C. Estos días extremadamente fríos son importantes para comprender condiciones invernales severas.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Días de Verano Anuales (SU)</div>
+                    <div class="index-description">
+                        Recuento anual de días cuando la temperatura máxima diaria excede 25°C. Este índice ayuda a evaluar patrones de clima cálido y estrés térmico potencial.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Temperatura Máxima Mensual (TXx)</div>
+                    <div class="index-description">
+                        La temperatura máxima diaria más alta registrada en cada mes. Este índice de temperatura extrema ayuda a identificar los eventos de calor más intensos.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Temperatura Mínima Mensual de las Máximas (TXn)</div>
+                    <div class="index-description">
+                        La temperatura máxima diaria más baja registrada en cada mes. Este índice muestra las temperaturas diurnas más frescas dentro de cada mes.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Temperatura Máxima Mensual de las Mínimas (TNx)</div>
+                    <div class="index-description">
+                        La temperatura mínima diaria más alta registrada en cada mes. Esto indica las temperaturas nocturnas más cálidas.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Temperatura Mínima Mensual (TNn)</div>
+                    <div class="index-description">
+                        La temperatura mínima diaria más baja registrada en cada mes. Este índice de frío extremo identifica las noches más frías.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Rango de Temperatura Diaria (DTR)</div>
+                    <div class="index-description">
+                        La diferencia promedio entre las temperaturas máximas y mínimas diarias. Valores altos de DTR indican grandes variaciones de temperatura diurna, que pueden afectar la agricultura y el confort humano.
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3>Índices de Precipitación</h3>
+                
+                <div class="index-item">
+                    <div class="index-name">Precipitación Máxima Mensual de 1 día (RX1day)</div>
+                    <div class="index-description">
+                        La mayor cantidad de precipitación registrada en un solo día dentro de cada mes. Este índice identifica eventos extremos de precipitación que pueden causar inundaciones.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Precipitación Máxima Mensual de 5 días (RX5day)</div>
+                    <div class="index-description">
+                        La precipitación acumulativa máxima en 5 días consecutivos dentro de cada mes. Este índice ayuda a evaluar eventos prolongados de lluvia intensa.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Recuento Anual de Días con Precipitación Superior a 10mm (R10mm)</div>
+                    <div class="index-description">
+                        Número anual de días con precipitación ≥ 10mm. Este umbral de precipitación moderada es útil para comprender la frecuencia de días húmedos.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Recuento Anual de Días con Precipitación Superior a 20mm (R20mm)</div>
+                    <div class="index-description">
+                        Número anual de días con precipitación ≥ 20mm. Este umbral de precipitación intensa ayuda a identificar eventos de lluvia fuerte.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Precipitación Total Anual (PRCPTOT)</div>
+                    <div class="index-description">
+                        Suma de toda precipitación en un año de días con precipitación ≥ 1mm. Este índice fundamental muestra totales anuales de lluvia.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Índice Simple de Intensidad de Precipitación (SDII)</div>
+                    <div class="index-description">
+                        Precipitación promedio en días húmedos (≥ 1mm). Calculado como precipitación total dividida por el número de días húmedos. Valores más altos indican lluvia más intensa cuando ocurre.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Número de Días Secos Consecutivos en un Mes (CDD)</div>
+                    <div class="index-description">
+                        Número máximo de días consecutivos con precipitación < 1mm dentro de cada mes. Este índice ayuda a evaluar condiciones de sequía y períodos secos.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Número de Días Húmedos Consecutivos en un Mes (CWD)</div>
+                    <div class="index-description">
+                        Número máximo de días consecutivos con precipitación ≥ 1mm dentro de cada mes. Este índice identifica períodos húmedos sostenidos.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Índice Estandarizado de Precipitación (SPI)</div>
+                    <div class="index-description">
+                        Un índice de sequía que compara la precipitación de un período específico con el promedio a largo plazo. Valores por debajo de -1 indican condiciones de sequía, mientras que valores por encima de +1 indican condiciones húmedas. El SPI se calcula usando ajuste de distribución gamma.
+                    </div>
+                </div>
+            </div>
+
+            <h2>Análisis Estadístico</h2>
+            <p>
+                ClimaPlots integra pruebas estadísticas avanzadas para analizar tendencias climáticas:
+            </p>
+            <ul>
+                <li><strong>Prueba de Mann-Kendall:</strong> Prueba no paramétrica para detectar tendencias monotónicas en datos de series temporales</li>
+                <li><strong>Prueba de Pettitt:</strong> Prueba no paramétrica para detectar puntos de cambio en series temporales</li>
+                <li><strong>Análisis de Tendencias:</strong> Identifica patrones crecientes o decrecientes en variables climáticas a lo largo del tiempo</li>
+            </ul>
+
+            <h2>Fuente de Datos</h2>
+            <p>
+                Los datos climáticos se obtienen de la API NASA POWER (Prediction of Worldwide Energy Resources), que proporciona:
+            </p>
+            <ul>
+                <li>Cobertura global con resolución espacial de 0.5° × 0.625°</li>
+                <li>Datos meteorológicos diarios desde 1981 hasta casi tiempo real</li>
+                <li>Datos de temperatura (mínima y máxima) y precipitación</li>
+            </ul>
+
+            <p>
+                El objetivo de ClimaPlots es simplificar el procesamiento y visualización de datos climáticos, haciendo estos análisis accesibles a usuarios de SIG sin la necesidad de conocimiento avanzado de programación. Todos los índices siguen estándares internacionales ETCCDI para detección y monitoreo de cambio climático.
+            </p>
+            
+            <p>
+                <em>Desarrollado por Caio Arantes &mdash; 2025</em>
+                <br>
+                <a href="https://www.linkedin.com/in/caioarantes/" target="_blank">LinkedIn: Caio Arantes</a>
+                <br>
+                <a href="mailto:caiosimplicioarantes@gmail.com">Email: caiosimplicioarantes@gmail.com</a>
+                <br>
+                <span>Supervisado por la Dra. Priscila Coltri &mdash; <a href="https://www.linkedin.com/in/priscila-coltri-5688541b/" target="_blank">LinkedIn: Priscila Coltri</a></span>
+                <br>
+                <span>No dude en contactarnos para preguntas o colaboración.</span>
+            </p>
+            <hr style="margin:2em 0;">
+            <p style="color:#2980b9; font-size:1.1em;">
+                <strong>Software Libre y Código Abierto:</strong> ClimaPlots se distribuye como software libre bajo una licencia de código abierto. ¡Se le anima a usar, modificar y contribuir!
+                <br>
+                El código fuente completo está disponible en:
+                <a href="https://github.com/caioarantes/climaplots" target="_blank" style="color:#1d6fa5; font-weight:bold;">github.com/caioarantes/climaplots</a>
+            </p>
+        </div>
     </div>
 
     <script>
@@ -743,6 +960,8 @@
                 detectedLang = 'pt';
             } else if (browserLang.startsWith('fr')) {
                 detectedLang = 'fr';
+            } else if (browserLang.startsWith('es')) {
+                detectedLang = 'es';
             }
             
             switchLanguage(detectedLang);
