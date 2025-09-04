@@ -233,6 +233,8 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         # Initialize window size after UI setup
         QTimer.singleShot(0, lambda: self.resizeEvent("small"))
 
+        self.language_method()
+
         # Configure Plotly chart settings
         self.config = {
             "displaylogo": False,
@@ -276,6 +278,12 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         self.googlemaps.clicked.connect(map_tools.hybrid_function)
         self.proxy.clicked.connect(self.open_proxy_dialog)
         self.learn.clicked.connect(self.open_learn_dialog)
+
+    def language_method(self):
+        lang = QgsApplication.instance().locale()
+        self.language = lang[:2]
+        print(f"Current locale: {self.language}")
+        self.gerar_req.setText("Run Analysis")
 
     def _initialize_data_attributes(self):
         """Initialize data storage attributes."""
