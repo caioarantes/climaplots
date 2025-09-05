@@ -8,7 +8,7 @@
 name=ClimaPlots
 qgisMinimumVersion=3.0
 description=Analyze and visualize climate data from NASA POWER, including temperature, precipitation, and solar radiation, directly within QGIS.
-version=0.1
+version=1.0
 author=Caio Arantes
 email=caiosimplicioarantes@gmail.com
 
@@ -23,6 +23,7 @@ repository=https://github.com/caioarantes/climaplots
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
 changelog=
+    1.0 - Ability to enter coordinates manually
     0.1 - Initial release
 
 # Tags are comma separated with spaces allowed
