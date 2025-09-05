@@ -30,7 +30,7 @@
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 15px;
-            max-width: 400px;
+            max-width: 500px;
         }
         .language-btn {
             background: #3498db;
@@ -66,6 +66,8 @@
             <button class="language-btn" onclick="switchLanguage('pt')" id="btn-pt">Português</button>
             <button class="language-btn" onclick="switchLanguage('fr')" id="btn-fr">Français</button>
             <button class="language-btn" onclick="switchLanguage('es')" id="btn-es">Español</button>
+            <button class="language-btn" onclick="switchLanguage('it')" id="btn-it">Italiano</button>
+            <button class="language-btn" onclick="switchLanguage('hi')" id="btn-hi">हिन्दी</button>
         </div>
 
         <!-- ENGLISH VERSION -->
@@ -915,6 +917,430 @@
                 <a href="https://github.com/caioarantes/climaplots" target="_blank" style="color:#1d6fa5; font-weight:bold;">github.com/caioarantes/climaplots</a>
             </p>
         </div>
+
+        <!-- ITALIAN VERSION -->
+        <div class="lang" id="lang-it">
+            <div style="display: flex; align-items: center; gap: 1em; margin-bottom: 1em;">
+                <img src="icon.png" alt="Icona ClimaPlots" style="width: 64px; height: 64px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);">
+                <h1 style="margin: 0;">ClimaPlots - Plugin QGIS</h1>
+            </div>
+            <p>
+                <strong>ClimaPlots</strong> è un plugin per QGIS che permette di calcolare e visualizzare indici climatici per punti selezionati sulla mappa. Facilita l'analisi di dati meteorologici e ambientali, integrando strumenti statistici e grafici interattivi direttamente nell'interfaccia QGIS.
+            </p>
+
+            <div class="demo-section">
+                <h2>Come Funziona</h2>
+                <img src="medias/climateplots.gif" alt="Dimostrazione del Plugin ClimaPlots" class="demo-gif">
+                <div class="demo-caption">
+                    Dimostrazione interattiva che mostra come utilizzare ClimaPlots: seleziona un punto sulla mappa, ottieni dati climatici e visualizza indici climatici con grafici interattivi.
+                </div>
+            </div>
+            
+            <h2>Funzionalità Principali</h2>
+            <ul>
+                <li>
+                    Calcola indici climatici seguendo gli standard 
+                    <a href="https://etccdi.pacificclimate.org/list_27_indices.shtml" target="_blank">
+                        ETCCDI (Expert Team on Climate Change Detection and Indices)
+                    </a>
+                </li>
+                <li>Genera grafici interattivi per l'analisi temporale delle variabili climatiche</li>
+                <li>Permette di selezionare punti sulla mappa per ottenere dati specifici di latitudine e longitudine</li>
+                <li>Integra test statistici come Mann-Kendall e Pettitt per l'analisi di tendenze e cambiamenti</li>
+                <li>Fornisce funzionalità di esportazione dati in formato CSV</li>
+            </ul>
+
+            <h2>Indici Climatici Calcolati</h2>
+            
+            <div class="category">
+                <h3>Indici di Temperatura</h3>
+                
+                <div class="index-item">
+                    <div class="index-name">Giorni di Gelo Annuali (FD)</div>
+                    <div class="index-description">
+                        Conteggio annuale di giorni in cui la temperatura minima giornaliera è inferiore a 0°C. Questo indice è importante per la pianificazione agricola e la comprensione del rischio di congelamento.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Notti Tropicali Annuali (TR)</div>
+                    <div class="index-description">
+                        Conteggio annuale di giorni in cui la temperatura minima giornaliera è superiore a 20°C. Valori elevati indicano notti calde che possono influenzare il comfort umano e il consumo energetico.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Giorni di Ghiaccio Annuali (ID)</div>
+                    <div class="index-description">
+                        Conteggio annuale di giorni in cui la temperatura massima giornaliera è inferiore a 0°C. Questi giorni estremamente freddi sono importanti per comprendere le condizioni invernali severe.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Giorni Estivi Annuali (SU)</div>
+                    <div class="index-description">
+                        Conteggio annuale di giorni in cui la temperatura massima giornaliera supera i 25°C. Questo indice aiuta a valutare i modelli di clima caldo e il potenziale stress termico.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Temperatura Massima Mensile (TXx)</div>
+                    <div class="index-description">
+                        La più alta temperatura massima giornaliera registrata in ogni mese. Questo indice di temperatura estrema aiuta a identificare gli eventi di calore più intensi.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Temperatura Minima Mensile delle Massime (TXn)</div>
+                    <div class="index-description">
+                        La più bassa temperatura massima giornaliera registrata in ogni mese. Questo indice mostra le temperature diurne più fresche all'interno di ogni mese.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Temperatura Massima Mensile delle Minime (TNx)</div>
+                    <div class="index-description">
+                        La più alta temperatura minima giornaliera registrata in ogni mese. Questo indica le temperature notturne più calde.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Temperatura Minima Mensile (TNn)</div>
+                    <div class="index-description">
+                        La più bassa temperatura minima giornaliera registrata in ogni mese. Questo indice di freddo estremo identifica le notti più fredde.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Escursione Termica Giornaliera (DTR)</div>
+                    <div class="index-description">
+                        La differenza media tra le temperature massime e minime giornaliere. Valori elevati di DTR indicano grandi variazioni di temperatura diurne, che possono influenzare l'agricoltura e il comfort umano.
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3>Indici di Precipitazione</h3>
+                
+                <div class="index-item">
+                    <div class="index-name">Precipitazione Massima Mensile di 1 giorno (RX1day)</div>
+                    <div class="index-description">
+                        La maggiore quantità di precipitazione registrata in un singolo giorno all'interno di ogni mese. Questo indice identifica eventi estremi di precipitazione che possono causare inondazioni.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Precipitazione Massima Mensile di 5 giorni (RX5day)</div>
+                    <div class="index-description">
+                        La precipitazione cumulativa massima in 5 giorni consecutivi all'interno di ogni mese. Questo indice aiuta a valutare eventi prolungati di forte pioggia.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Conteggio Annuale di Giorni con Precipitazione Superiore a 10mm (R10mm)</div>
+                    <div class="index-description">
+                        Numero annuale di giorni con precipitazione ≥ 10mm. Questa soglia di precipitazione moderata è utile per comprendere la frequenza dei giorni umidi.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Conteggio Annuale di Giorni con Precipitazione Superiore a 20mm (R20mm)</div>
+                    <div class="index-description">
+                        Numero annuale di giorni con precipitazione ≥ 20mm. Questa soglia di precipitazione intensa aiuta a identificare eventi di pioggia forte.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Precipitazione Totale Annuale (PRCPTOT)</div>
+                    <div class="index-description">
+                        Somma di tutta la precipitazione in un anno dai giorni con precipitazione ≥ 1mm. Questo indice fondamentale mostra i totali annuali di pioggia.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Indice Semplice di Intensità di Precipitazione (SDII)</div>
+                    <div class="index-description">
+                        Precipitazione media nei giorni umidi (≥ 1mm). Calcolato come precipitazione totale divisa per il numero di giorni umidi. Valori più alti indicano pioggia più intensa quando si verifica.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Numero di Giorni Secchi Consecutivi in un Mese (CDD)</div>
+                    <div class="index-description">
+                        Numero massimo di giorni consecutivi con precipitazione < 1mm all'interno di ogni mese. Questo indice aiuta a valutare le condizioni di siccità e i periodi secchi.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Numero di Giorni Umidi Consecutivi in un Mese (CWD)</div>
+                    <div class="index-description">
+                        Numero massimo di giorni consecutivi con precipitazione ≥ 1mm all'interno di ogni mese. Questo indice identifica periodi umidi sostenuti.
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">Indice Standardizzato di Precipitazione (SPI)</div>
+                    <div class="index-description">
+                        Un indice di siccità che confronta la precipitazione di un periodo specifico con la media a lungo termine. Valori inferiori a -1 indicano condizioni di siccità, mentre valori superiori a +1 indicano condizioni umide. L'SPI è calcolato utilizzando l'adattamento della distribuzione gamma.
+                    </div>
+                </div>
+            </div>
+
+            <h2>Analisi Statistica</h2>
+            <p>
+                ClimaPlots integra test statistici avanzati per analizzare le tendenze climatiche:
+            </p>
+            <ul>
+                <li><strong>Test di Mann-Kendall:</strong> Test non parametrico per rilevare tendenze monotone nei dati delle serie temporali</li>
+                <li><strong>Test di Pettitt:</strong> Test non parametrico per rilevare punti di cambiamento nelle serie temporali</li>
+                <li><strong>Analisi delle Tendenze:</strong> Identifica modelli crescenti o decrescenti nelle variabili climatiche nel tempo</li>
+            </ul>
+
+            <h2>Fonte dei Dati</h2>
+            <p>
+                I dati climatici sono ottenuti dall'API NASA POWER (Prediction of Worldwide Energy Resources), che fornisce:
+            </p>
+            <ul>
+                <li>Copertura globale con risoluzione spaziale di 0.5° × 0.625°</li>
+                <li>Dati meteorologici giornalieri dal 1981 a quasi tempo reale</li>
+                <li>Dati di temperatura (minima e massima) e precipitazione</li>
+            </ul>
+
+            <p>
+                L'obiettivo di ClimaPlots è semplificare l'elaborazione e la visualizzazione dei dati climatici, rendendo queste analisi accessibili agli utenti GIS senza la necessità di conoscenze avanzate di programmazione. Tutti gli indici seguono gli standard internazionali ETCCDI per il rilevamento e il monitoraggio dei cambiamenti climatici.
+            </p>
+            
+            <p>
+                <em>Sviluppato da Caio Arantes &mdash; 2025</em>
+                <br>
+                <a href="https://www.linkedin.com/in/caioarantes/" target="_blank">LinkedIn: Caio Arantes</a>
+                <br>
+                <a href="mailto:caiosimplicioarantes@gmail.com">Email: caiosimplicioarantes@gmail.com</a>
+                <br>
+                <span>Supervisionato dalla Dott.ssa Priscila Coltri &mdash; <a href="https://www.linkedin.com/in/priscila-coltri-5688541b/" target="_blank">LinkedIn: Priscila Coltri</a></span>
+                <br>
+                <span>Non esitate a contattarci per domande o collaborazioni.</span>
+            </p>
+            <hr style="margin:2em 0;">
+            <p style="color:#2980b9; font-size:1.1em;">
+                <strong>Software Libero &amp; Open Source:</strong> ClimaPlots è distribuito come software libero sotto una licenza open source. Siete incoraggiati a usare, modificare e contribuire!
+                <br>
+                Il codice sorgente completo è disponibile su:
+                <a href="https://github.com/caioarantes/climaplots" target="_blank" style="color:#1d6fa5; font-weight:bold;">github.com/caioarantes/climaplots</a>
+            </p>
+        </div>
+
+        <!-- HINDI VERSION -->
+        <div class="lang" id="lang-hi" dir="ltr">
+            <div style="display: flex; align-items: center; gap: 1em; margin-bottom: 1em;">
+                <img src="icon.png" alt="ClimaPlots आइकन" style="width: 64px; height: 64px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);">
+                <h1 style="margin: 0;">ClimaPlots - QGIS प्लगइन</h1>
+            </div>
+            <p>
+                <strong>ClimaPlots</strong> QGIS के लिए एक प्लगइन है जो मानचित्र पर चयनित बिंदुओं के लिए जलवायु सूचकांकों की गणना और दृश्यीकरण की सुविधा देता है। यह मौसम विज्ञान और पर्यावरणीय डेटा के विश्लेषण को सुविधाजनक बनाता है, सांख्यिकीय उपकरणों और इंटरैक्टिव चार्ट को सीधे QGIS इंटरफेस में एकीकृत करता है।
+            </p>
+
+            <div class="demo-section">
+                <h2>यह कैसे काम करता है</h2>
+                <img src="medias/climateplots.gif" alt="ClimaPlots प्लगइन प्रदर्शन" class="demo-gif">
+                <div class="demo-caption">
+                    ClimaPlots का उपयोग करने का इंटरैक्टिव प्रदर्शन: मानचित्र पर एक बिंदु चुनें, जलवायु डेटा प्राप्त करें, और इंटरैक्टिव चार्ट के साथ जलवायु सूचकांकों को देखें।
+                </div>
+            </div>
+            
+            <h2>मुख्य विशेषताएं</h2>
+            <ul>
+                <li>
+                    <a href="https://etccdi.pacificclimate.org/list_27_indices.shtml" target="_blank">
+                        ETCCDI (Expert Team on Climate Change Detection and Indices) मानकों
+                    </a>
+                    का पालन करते हुए जलवायु सूचकांकों की गणना करता है
+                </li>
+                <li>जलवायु चरों के लौकिक विश्लेषण के लिए इंटरैक्टिव चार्ट उत्पन्न करता है</li>
+                <li>अक्षांश और देशांतर की विशिष्ट जानकारी प्राप्त करने के लिए मानचित्र पर बिंदुओं का चयन करने की सुविधा देता है</li>
+                <li>प्रवृत्ति और परिवर्तन विश्लेषण के लिए Mann-Kendall और Pettitt जैसे सांख्यिकीय परीक्षण एकीकृत करता है</li>
+                <li>CSV प्रारूप में डेटा निर्यात की कार्यक्षमता प्रदान करता है</li>
+            </ul>
+
+            <h2>गणना किए गए जलवायु सूचकांक</h2>
+            
+            <div class="category">
+                <h3>तापमान सूचकांक</h3>
+                
+                <div class="index-item">
+                    <div class="index-name">वार्षिक पाला दिन (FD)</div>
+                    <div class="index-description">
+                        उन दिनों की वार्षिक गणना जब दैनिक न्यूनतम तापमान 0°C से नीचे होता है। यह सूचकांक कृषि योजना और जमने के जोखिम को समझने के लिए महत्वपूर्ण है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">वार्षिक उष्णकटिबंधीय रातें (TR)</div>
+                    <div class="index-description">
+                        उन दिनों की वार्षिक गणना जब दैनिक न्यूनतम तापमान 20°C से ऊपर होता है। उच्च मान गर्म रातों का संकेत देते हैं जो मानव आराम और ऊर्जा खपत को प्रभावित कर सकते हैं।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">वार्षिक बर्फीले दिन (ID)</div>
+                    <div class="index-description">
+                        उन दिनों की वार्षिक गणना जब दैनिक अधिकतम तापमान 0°C से नीचे होता है। ये अत्यधिक ठंडे दिन गंभीर शीतकालीन परिस्थितियों को समझने के लिए महत्वपूर्ण हैं।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">वार्षिक गर्मी के दिन (SU)</div>
+                    <div class="index-description">
+                        उन दिनों की वार्षिक गणना जब दैनिक अधिकतम तापमान 25°C से अधिक होता है। यह सूचकांक गर्म मौसम के पैटर्न और संभावित गर्मी के तनाव का आकलन करने में मदद करता है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">मासिक अधिकतम तापमान (TXx)</div>
+                    <div class="index-description">
+                        प्रत्येक महीने में दर्ज किया गया सबसे उच्च दैनिक अधिकतम तापमान। यह चरम तापमान सूचकांक सबसे तीव्र गर्मी की घटनाओं की पहचान करने में मदद करता है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">अधिकतम तापमान का मासिक न्यूनतम तापमान (TXn)</div>
+                    <div class="index-description">
+                        प्रत्येक महीने में दर्ज किया गया सबसे कम दैनिक अधिकतम तापमान। यह सूचकांक प्रत्येक महीने के भीतर सबसे ठंडे दिन के तापमान को दर्शाता है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">न्यूनतम तापमान का मासिक अधिकतम तापमान (TNx)</div>
+                    <div class="index-description">
+                        प्रत्येक महीने में दर्ज किया गया सबसे उच्च दैनिक न्यूनतम तापमान। यह सबसे गर्म रात के तापमान को दर्शाता है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">मासिक न्यूनतम तापमान (TNn)</div>
+                    <div class="index-description">
+                        प्रत्येक महीने में दर्ज किया गया सबसे कम दैनिक न्यूनतम तापमान। यह चरम ठंड सूचकांक सबसे ठंडी रातों की पहचान करता है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">दैनिक तापमान सीमा (DTR)</div>
+                    <div class="index-description">
+                        दैनिक अधिकतम और न्यूनतम तापमान के बीच औसत अंतर। DTR के उच्च मान बड़े दैनिक तापमान भिन्नताओं का संकेत देते हैं, जो कृषि और मानव आराम को प्रभावित कर सकते हैं।
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3>वर्षा सूचकांक</h3>
+                
+                <div class="index-item">
+                    <div class="index-name">मासिक अधिकतम 1-दिन वर्षा (RX1day)</div>
+                    <div class="index-description">
+                        प्रत्येक महीने के भीतर एक दिन में दर्ज की गई वर्षा की सबसे अधिक मात्रा। यह सूचकांक चरम वर्षा घटनाओं की पहचान करता है जो बाढ़ का कारण बन सकती हैं।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">मासिक अधिकतम 5-दिन वर्षा (RX5day)</div>
+                    <div class="index-description">
+                        प्रत्येक महीने के भीतर लगातार 5 दिनों में अधिकतम संचयी वर्षा। यह सूचकांक लंबी भारी वर्षा की घटनाओं का आकलन करने में मदद करता है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">10mm से अधिक वर्षा वाले दिनों की वार्षिक गणना (R10mm)</div>
+                    <div class="index-description">
+                        वर्षा ≥ 10mm वाले दिनों की वार्षिक संख्या। यह मध्यम वर्षा सीमा नम दिनों की आवृत्ति समझने के लिए उपयोगी है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">20mm से अधिक वर्षा वाले दिनों की वार्षिक गणना (R20mm)</div>
+                    <div class="index-description">
+                        वर्षा ≥ 20mm वाले दिनों की वार्षिक संख्या। यह तीव्र वर्षा सीमा भारी बारिश की घटनाओं की पहचान करने में मदद करती है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">कुल वार्षिक वर्षा (PRCPTOT)</div>
+                    <div class="index-description">
+                        वर्षा ≥ 1mm वाले दिनों से एक वर्ष में सभी वर्षा का योग। यह मौलिक सूचकांक वार्षिक वर्षा कुल दिखाता है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">सरल वर्षा तीव्रता सूचकांक (SDII)</div>
+                    <div class="index-description">
+                        नम दिनों (≥ 1mm) में औसत वर्षा। कुल वर्षा को नम दिनों की संख्या से विभाजित करके गणना की जाती है। उच्च मान दर्शाते हैं कि जब वर्षा होती है तो वह अधिक तीव्र होती है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">एक महीने में लगातार सूखे दिनों की संख्या (CDD)</div>
+                    <div class="index-description">
+                        प्रत्येक महीने के भीतर वर्षा < 1mm वाले लगातार दिनों की अधिकतम संख्या। यह सूचकांक सूखे की स्थिति और शुष्क अवधि का आकलन करने में मदद करता है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">एक महीने में लगातार नम दिनों की संख्या (CWD)</div>
+                    <div class="index-description">
+                        प्रत्येक महीने के भीतर वर्षा ≥ 1mm वाले लगातार दिनों की अधिकतम संख्या। यह सूचकांक निरंतर नम अवधि की पहचान करता है।
+                    </div>
+                </div>
+
+                <div class="index-item">
+                    <div class="index-name">मानकीकृत वर्षा सूचकांक (SPI)</div>
+                    <div class="index-description">
+                        एक सूखा सूचकांक जो किसी विशिष्ट अवधि की वर्षा की तुलना दीर्घकालिक औसत से करता है। -1 से नीचे के मान सूखे की स्थिति का संकेत देते हैं, जबकि +1 से ऊपर के मान नम स्थिति का संकेत देते हैं। SPI की गणना गामा वितरण फिटिंग का उपयोग करके की जाती है।
+                    </div>
+                </div>
+            </div>
+
+            <h2>सांख्यिकीय विश्लेषण</h2>
+            <p>
+                ClimaPlots जलवायु प्रवृत्तियों का विश्लेषण करने के लिए उन्नत सांख्यिकीय परीक्षण एकीकृत करता है:
+            </p>
+            <ul>
+                <li><strong>Mann-Kendall परीक्षण:</strong> समय श्रृंखला डेटा में एकरस प्रवृत्तियों का पता लगाने के लिए गैर-पैरामीट्रिक परीक्षण</li>
+                <li><strong>Pettitt परीक्षण:</strong> समय श्रृंखला में परिवर्तन बिंदुओं का पता लगाने के लिए गैर-पैरामीट्रिक परीक्षण</li>
+                <li><strong>प्रवृत्ति विश्लेषण:</strong> समय के साथ जलवायु चरों में बढ़ते या घटते पैटर्न की पहचान करता है</li>
+            </ul>
+
+            <h2>डेटा स्रोत</h2>
+            <p>
+                जलवायु डेटा NASA POWER (Prediction of Worldwide Energy Resources) API से प्राप्त किया जाता है, जो प्रदान करता है:
+            </p>
+            <ul>
+                <li>0.5° × 0.625° स्थानीय रिज़ॉल्यूशन के साथ वैश्विक कवरेज</li>
+                <li>1981 से लगभग वास्तविक समय तक दैनिक मौसम विज्ञान डेटा</li>
+                <li>तापमान (न्यूनतम और अधिकतम) और वर्षा डेटा</li>
+            </ul>
+
+            <p>
+                ClimaPlots का लक्ष्य जलवायु डेटा प्रसंस्करण और दृश्यीकरण को सरल बनाना है, इन विश्लेषणों को उन्नत प्रोग्रामिंग ज्ञान की आवश्यकता के बिना GIS उपयोगकर्ताओं के लिए सुलभ बनाना है। सभी सूचकांक जलवायु परिवर्तन का पता लगाने और निगरानी के लिए अंतर्राष्ट्रीय ETCCDI मानकों का पालन करते हैं।
+            </p>
+            
+            <p>
+                <em>कैयो अरांतेस द्वारा विकसित &mdash; 2025</em>
+                <br>
+                <a href="https://www.linkedin.com/in/caioarantes/" target="_blank">LinkedIn: Caio Arantes</a>
+                <br>
+                <a href="mailto:caiosimplicioarantes@gmail.com">Email: caiosimplicioarantes@gmail.com</a>
+                <br>
+                <span>डॉ. प्रिसिला कोल्त्री के पर्यवेक्षण में &mdash; <a href="https://www.linkedin.com/in/priscila-coltri-5688541b/" target="_blank">LinkedIn: Priscila Coltri</a></span>
+                <br>
+                <span>प्रश्नों या सहयोग के लिए बेझिझक संपर्क करें।</span>
+            </p>
+            <hr style="margin:2em 0;">
+            <p style="color:#2980b9; font-size:1.1em;">
+                <strong>मुफ्त सॉफ्टवेयर और ओपन सोर्स:</strong> ClimaPlots को ओपन सोर्स लाइसेंस के तहत मुफ्त सॉफ्टवेयर के रूप में वितरित किया जाता है। आपको उपयोग करने, संशोधित करने और योगदान करने के लिए प्रोत्साहित किया जाता है!
+                <br>
+                पूर्ण स्रोत कोड यहाँ उपलब्ध है:
+                <a href="https://github.com/caioarantes/climaplots" target="_blank" style="color:#1d6fa5; font-weight:bold;">github.com/caioarantes/climaplots</a>
+            </p>
+        </div>
     </div>
 
     <script>
@@ -962,6 +1388,10 @@
                 detectedLang = 'fr';
             } else if (browserLang.startsWith('es')) {
                 detectedLang = 'es';
+            } else if (browserLang.startsWith('it')) {
+                detectedLang = 'it';
+            } else if (browserLang.startsWith('hi')) {
+                detectedLang = 'hi';
             }
             
             switchLanguage(detectedLang);
