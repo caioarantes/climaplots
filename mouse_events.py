@@ -5,6 +5,14 @@ from qgis.PyQt.QtGui import QColor
 # Função para lidar com o clique do mouse
 
 def handleMouseDown(canvas, dlg, Markers, point, button):
+    # Only allow placing/updating markers when the plugin UI is on tab 0
+    try:
+        if hasattr(dlg, 'tabWidget') and dlg.tabWidget.currentIndex() != 0:
+            return
+    except Exception:
+        # If anything goes wrong checking the tab, continue to avoid blocking UX
+        pass
+
     crsSrc = canvas.mapSettings().destinationCrs()
     crsDest = QgsCoordinateReferenceSystem(4326)
     xform = QgsCoordinateTransform(crsSrc, crsDest, QgsProject.instance()) 
@@ -32,6 +40,12 @@ def Delete_Marker(canvas, Markers):
         for mark in Markers:
             canvas.scene().removeItem(mark)
             canvas.refresh()
+        # Clear the markers list to avoid holding stale references
+        try:
+            Markers.clear()
+        except Exception:
+            # If Markers is not a list-like, ignore
+            pass
     except:
         pass
 

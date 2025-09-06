@@ -168,6 +168,12 @@ class ClimaPlots:
         # Create dialog only if it doesn't exist
         if not hasattr(self, 'dlg') or self.dlg is None:
             self.dlg = ClimaPlotsDialog(parent=None, iface=self.iface)
+            # expose canvas and markers list to the dialog for cleanup
+            try:
+                self.dlg.canvas = self.canvas
+                self.dlg.Markers = self.Markers
+            except Exception:
+                pass
         
         # Check if dialog exists but is minimized or hidden
         if self.dlg.isMinimized():
@@ -185,19 +191,19 @@ class ClimaPlots:
             self.dlg.raise_()
             self.dlg.activateWindow()
 
-        """Run method that performs all the real work"""
+        # Run method that performs all the real work
         self.canvas.setMapTool(self.clickTool)
         # Conecta o evento do mouse à função importada
         self.clickTool.canvasClicked.connect(lambda point, button=None: handleMouseDown(self.canvas, self.dlg, self.Markers, point, button))
         self.dlg.LongEdit.clear()
         self.dlg.LatEdit.clear()
+        # Ensure dialog-level cleanup also removes markers when rejected
         self.dlg.rejected.connect(lambda: fun_fechou(self.canvas, self.Markers))
-
 
         self.dlg.show()
 
         # Run the dialog event loop
-        result = self.dlg.exec_()      
+        result = self.dlg.exec_()
 
 
 

@@ -169,6 +169,7 @@ from .modules import (
     map_tools,
     save_utils,
 )
+from .mouse_events import Delete_Marker
 
 # =============================================================================
 # UI CONFIGURATION
@@ -285,6 +286,15 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         print(f"Current locale: {self.language}")
         self.gerar_req.setText("Run Analysis")
 
+
+        atributos = ["Max Temperature", "Min Temperature", "Precipitation"]
+
+        # Include irradiation and relative humidity as selectable attributes
+        atributos = ["Max Temperature", "Min Temperature", "Precipitation", "Relative Humidity", "Irradiation"]
+
+        for atributo in atributos:
+            self.atributo.addItem(atributo)
+
     def _initialize_data_attributes(self):
         """Initialize data storage attributes."""
         self.df = None
@@ -297,11 +307,10 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
     def _setup_climate_indices(self):
         """Setup the climate indices dropdown with available options."""
         sheet_names = [
-            'Total Annual Precipitation',
+            'Annual Summer Days',
             'Annual Frost Days',
             'Annual Tropical Nights',
             'Annual Icing Days',
-            'Annual Summer Days',
             'Monthly Maximum Temperature',
             'Monthly Minimum Temperature of Maximum Temperatures',
             'Monthly Maximum Temperature of Minimum Temperatures',
@@ -363,6 +372,15 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             except RuntimeError:
                 # Timer might already be stopped or deleted
                 pass
+        # Remove any markers left on the canvas when the dialog is hidden
+        try:
+            canvas = getattr(self, 'canvas', None) or (self.iface.mapCanvas() if hasattr(self, 'iface') else None)
+            markers = getattr(self, 'Markers', None)
+            if canvas and markers:
+                Delete_Marker(canvas, markers)
+        except Exception:
+            # Do not fail hide for marker cleanup issues
+            pass
 
     def check_focus(self):
         """
@@ -404,6 +422,14 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
                 pass
         
         # Hide the dialog instead of closing to preserve state
+        # Also remove markers from canvas when closing
+        try:
+            canvas = getattr(self, 'canvas', None) or (self.iface.mapCanvas() if hasattr(self, 'iface') else None)
+            markers = getattr(self, 'Markers', None)
+            if canvas and markers:
+                Delete_Marker(canvas, markers)
+        except Exception:
+            pass
         self.hide()
         event.ignore()
 
@@ -486,6 +512,14 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         self.LatEdit.clear()
         self.tabWidget.setCurrentIndex(0)
         qgis.utils.iface.actionPan().trigger()
+        # Ensure markers are removed when the dialog's own cleanup is triggered
+        try:
+            canvas = getattr(self, 'canvas', None) or (self.iface.mapCanvas() if hasattr(self, 'iface') else None)
+            markers = getattr(self, 'Markers', None)
+            if canvas and markers:
+                Delete_Marker(canvas, markers)
+        except Exception:
+            pass
 
     # =========================================================================
     # SAVE BUTTON HANDLERS
@@ -548,14 +582,28 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         # Group data by year for annual aggregation
         df['Year'] = df['Date'].dt.year
         df_aux = df.groupby('Year')[['Precipitation']].sum()
-        df_mean = df.groupby('Year').mean()[['Min Temperature', 'Max Temperature']]
+
+        # Prepare list of variables to aggregate by annual mean (include RH and Irradiation if present)
+        mean_candidates = ['Min Temperature', 'Max Temperature', 'Relative Humidity', 'Irradiation']
+        mean_cols = [c for c in mean_candidates if c in df.columns]
+
+        if mean_cols:
+            df_mean = df.groupby('Year').mean()[mean_cols]
+        else:
+            # Fallback: create an empty dataframe indexed by year
+            df_mean = pd.DataFrame(index=df_aux.index)
+
+        # Always include annual precipitation (sum)
         df_mean['Precipitation'] = df_aux['Precipitation']
         df_mean.reset_index(inplace=True)
-        
+
         # Create date column for the beginning of each year
         df_mean['Date'] = pd.to_datetime(df_mean['Year'].astype(str) + '-01-01')
         
         # Prepare data for statistical analysis
+        if atributo not in df_mean.columns:
+            QMessageBox.warning(self, 'Data not available', f"Attribute '{atributo}' is not available for the selected location.")
+            return
         df_plot = df_mean[['Date', atributo]].copy()
         df_plot.index = df_plot['Date']
         df_plot = df_plot[[atributo]].astype(float)
@@ -565,7 +613,7 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         result_pettitt = hg.pettitt_test(df_plot)
 
         # Create plot titles with test results
-        title1 = (f'Mann Kendall Test: trend=<b>{result_mk.trend}</b>, alpha=0.05, '
+        title1 = (f'Mann Kendall Test: <b>{result_mk.trend}</b>, alpha=0.05, '
                  f'p-value={round(result_mk.p, 4)}')
         
         if result_pettitt.h:
@@ -593,9 +641,14 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         if atributo == "Precipitation":
             self.fig.update_yaxes(title_text="Precipitation (mm) - Annual Total")
         elif atributo == "Min Temperature":
-            self.fig.update_yaxes(title_text="Min Temperature (ºC)")
+            self.fig.update_yaxes(title_text="Min Temperature (ºC) - Annual Mean")
         elif atributo == "Max Temperature":
-            self.fig.update_yaxes(title_text="Max Temperature (ºC)")
+            self.fig.update_yaxes(title_text="Max Temperature (ºC) - Annual Mean")
+        elif atributo == "Irradiation":
+            # After conversion, units are kWh/m²/day
+            self.fig.update_yaxes(title_text="Irradiation (kWh/m²/day) - Annual Mean")
+        elif atributo == "Relative Humidity":
+            self.fig.update_yaxes(title_text="Relative Humidity (%) - Annual Mean")
 
         # Render plot in web view
         self.webView_1.setHtml(
@@ -719,111 +772,125 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         precip_indices = pdex.indices(time_dim='Date')
         temp_indices = tdex.indices(time_dim='Date')
 
-        # =====================================================================
-        # TEMPERATURE INDICES CALCULATION
-        # =====================================================================
-        
-        # Annual frost days (days with min temp < 0°C)
-        frost_days_df = temp_indices.annual_frost_days(
-            ds, varname='Min Temperature'
-        ).to_dataframe()
-        frost_days_df.columns = ['Annual Frost Days']
-
-        # Annual tropical nights (days with min temp > 20°C)
-        tropical_nights_df = temp_indices.annual_tropical_nights(
-            ds, varname='Min Temperature'
-        ).to_dataframe()
-        tropical_nights_df.columns = ['Annual Tropical Nights']
-
-        # Annual icing days (days with max temp < 0°C)
-        icing_days_df = temp_indices.annual_icing_days(
-            ds, varname='Max Temperature'
-        ).to_dataframe()
-        icing_days_df.columns = ['Annual Icing Days']
-
-        # Annual summer days (days with max temp > 25°C)
-        summer_days_df = temp_indices.annual_summer_days(
-            ds, varname='Max Temperature'
-        ).to_dataframe()
-        summer_days_df.columns = ['Annual Summer Days']
-
-        # Monthly temperature extremes
-        txx_df = temp_indices.monthly_txx(
-            ds, varname='Max Temperature'
-        ).to_dataframe()[['Max Temperature']]
-        txx_df.columns = ['Monthly Maximum Temperature']
-
-        txn_df = temp_indices.monthly_txn(
-            ds, varname='Max Temperature'
-        ).to_dataframe()[['Max Temperature']]
-        txn_df.columns = ['Monthly Minimum Temperature of Maximum Temperatures']
-
-        tnx_df = temp_indices.monthly_tnx(
-            ds, varname='Min Temperature'
-        ).to_dataframe()[['Min Temperature']]
-        tnx_df.columns = ['Monthly Maximum Temperature of Minimum Temperatures']
-
-        tnn_df = temp_indices.monthly_tnn(
-            ds, varname='Min Temperature'
-        ).to_dataframe()[['Min Temperature']]
-        tnn_df.columns = ['Monthly Minimum Temperature']
-
-        # Daily temperature range
-        dtr_df = temp_indices.daily_temperature_range(
-            ds, ds, 
-            min_varname='Min Temperature', 
-            max_varname='Max Temperature'
-        ).to_dataframe(name="DTR")
-        dtr_df.columns = ['Daily Temperature Range']
+        # Compute indices with per-index error handling so one failure doesn't stop others
+        results = {}
 
         # =====================================================================
-        # PRECIPITATION INDICES CALCULATION
+        # TEMPERATURE INDICES
         # =====================================================================
-        
-        # Maximum 1-day and 5-day precipitation amounts
-        rx1day_df = precip_indices.monthly_rx1day(
-            ds, varname='Precipitation'
-        ).to_dataframe()
-        rx1day_df.columns = ['Monthly Maximum 1-day Precipitation']
+        try:
+            frost_days_df = temp_indices.annual_frost_days(ds, varname='Min Temperature').to_dataframe()
+            frost_days_df.columns = ['Annual Frost Days']
+            results['Annual Frost Days'] = frost_days_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute Annual Frost Days: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute Annual Frost Days: {e}')
 
-        rx5day_df = precip_indices.monthly_rx5day(
-            ds, varname='Precipitation'
-        ).to_dataframe()
-        rx5day_df.columns = ['Monthly Maximum 5-day Precipitation']
+        try:
+            tropical_nights_df = temp_indices.annual_tropical_nights(ds, varname='Min Temperature').to_dataframe()
+            tropical_nights_df.columns = ['Annual Tropical Nights']
+            results['Annual Tropical Nights'] = tropical_nights_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute Annual Tropical Nights: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute Annual Tropical Nights: {e}')
 
-        # Heavy precipitation day counts
-        r10mm_df = precip_indices.annual_r10mm(
-            ds, varname='Precipitation'
-        ).to_dataframe()
-        r10mm_df.columns = ['Annual Count of Days when Precipitation Exceeds 10mm']
+        try:
+            icing_days_df = temp_indices.annual_icing_days(ds, varname='Max Temperature').to_dataframe()
+            icing_days_df.columns = ['Annual Icing Days']
+            results['Annual Icing Days'] = icing_days_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute Annual Icing Days: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute Annual Icing Days: {e}')
 
-        r20mm_df = precip_indices.annual_r20mm(
-            ds, varname='Precipitation'
-        ).to_dataframe()
-        r20mm_df.columns = ['Annual Count of Days when Precipitation Exceeds 20mm']
+        try:
+            summer_days_df = temp_indices.annual_summer_days(ds, varname='Max Temperature').to_dataframe()
+            summer_days_df.columns = ['Annual Summer Days']
+            results['Annual Summer Days'] = summer_days_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute Annual Summer Days: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute Annual Summer Days: {e}')
 
-        # Total annual precipitation
-        prcptot_annual_df = precip_indices.prcptot(
-            ds, period='1Y', varname='Precipitation'
-        ).to_dataframe()
-        prcptot_annual_df.columns = ['Total Annual Precipitation']
+        def _safe_monthly(func, ds, varname, out_name, colname):
+            try:
+                df_tmp = func(ds, varname=varname).to_dataframe()[[varname]]
+                df_tmp.columns = [colname]
+                results[out_name] = df_tmp
+            except Exception as e:
+                QgsMessageLog.logMessage(f'Failed to compute {out_name}: {e}', 'ClimaPlots', Qgis.Warning)
+                print(f'Failed to compute {out_name}: {e}')
 
-        # Simple precipitation intensity index
-        sdii_value_df = precip_indices.sdii(
-            ds, period='1M', varname='Precipitation'
-        ).to_dataframe()
-        sdii_value_df.columns = ['Simple Precipitation Intensity Index']
+        _safe_monthly(temp_indices.monthly_txx, ds, 'Max Temperature', 'Monthly Maximum Temperature', 'Max Temperature')
+        _safe_monthly(temp_indices.monthly_txn, ds, 'Max Temperature', 'Monthly Minimum Temperature of Maximum Temperatures', 'Max Temperature')
+        _safe_monthly(temp_indices.monthly_tnx, ds, 'Min Temperature', 'Monthly Maximum Temperature of Minimum Temperatures', 'Min Temperature')
+        _safe_monthly(temp_indices.monthly_tnn, ds, 'Min Temperature', 'Monthly Minimum Temperature', 'Min Temperature')
 
-        # Consecutive dry and wet days
-        cdd_value_df = precip_indices.cdd(
-            ds, period='1M', varname='Precipitation'
-        ).to_dataframe()
-        cdd_value_df.columns = ['Number of Consecutive Dry Days in a Month']
+        try:
+            dtr_df = temp_indices.daily_temperature_range(ds, ds, min_varname='Min Temperature', max_varname='Max Temperature').to_dataframe(name='DTR')
+            dtr_df.columns = ['Daily Temperature Range']
+            results['Daily Temperature Range'] = dtr_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute Daily Temperature Range: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute Daily Temperature Range: {e}')
 
-        cwd_value_df = precip_indices.cwd(
-            ds, period='1M', varname='Precipitation'
-        ).to_dataframe()
-        cwd_value_df.columns = ['Number of Consecutive Wet Days in a Month']
+        # =====================================================================
+        # PRECIPITATION INDICES
+        # =====================================================================
+        try:
+            rx1day_df = precip_indices.monthly_rx1day(ds, varname='Precipitation').to_dataframe()
+            rx1day_df.columns = ['Monthly Maximum 1-day Precipitation']
+            results['Monthly Maximum 1-day Precipitation'] = rx1day_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute Monthly Maximum 1-day Precipitation: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute Monthly Maximum 1-day Precipitation: {e}')
+
+        try:
+            rx5day_df = precip_indices.monthly_rx5day(ds, varname='Precipitation').to_dataframe()
+            rx5day_df.columns = ['Monthly Maximum 5-day Precipitation']
+            results['Monthly Maximum 5-day Precipitation'] = rx5day_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute Monthly Maximum 5-day Precipitation: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute Monthly Maximum 5-day Precipitation: {e}')
+
+        try:
+            r10mm_df = precip_indices.annual_r10mm(ds, varname='Precipitation').to_dataframe()
+            r10mm_df.columns = ['Annual Count of Days when Precipitation Exceeds 10mm']
+            results['Annual Count of Days when Precipitation Exceeds 10mm'] = r10mm_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute Annual R10mm: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute Annual R10mm: {e}')
+
+        try:
+            r20mm_df = precip_indices.annual_r20mm(ds, varname='Precipitation').to_dataframe()
+            r20mm_df.columns = ['Annual Count of Days when Precipitation Exceeds 20mm']
+            results['Annual Count of Days when Precipitation Exceeds 20mm'] = r20mm_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute Annual R20mm: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute Annual R20mm: {e}')
+
+
+        try:
+            sdii_value_df = precip_indices.sdii(ds, period='1M', varname='Precipitation').to_dataframe()
+            sdii_value_df.columns = ['Simple Precipitation Intensity Index']
+            results['Simple Precipitation Intensity Index'] = sdii_value_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute SDII: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute SDII: {e}')
+
+        try:
+            cdd_value_df = precip_indices.cdd(ds, period='1M', varname='Precipitation').to_dataframe()
+            cdd_value_df.columns = ['Number of Consecutive Dry Days in a Month']
+            results['Number of Consecutive Dry Days in a Month'] = cdd_value_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute CDD: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute CDD: {e}')
+
+        try:
+            cwd_value_df = precip_indices.cwd(ds, period='1M', varname='Precipitation').to_dataframe()
+            cwd_value_df.columns = ['Number of Consecutive Wet Days in a Month']
+            results['Number of Consecutive Wet Days in a Month'] = cwd_value_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute CWD: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute CWD: {e}')
 
         # =====================================================================
         # STANDARDIZED PRECIPITATION INDEX (SPI) CALCULATION
@@ -835,41 +902,22 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         ).sum()
         df_aux.dropna(inplace=True)
         
-        # Fit gamma distribution to accumulated precipitation
-        params = gamma.fit(df_aux['Accumulated_Precipitation'], floc=0)
-        df_aux['Cumulative_Probability'] = gamma.cdf(
-            df_aux['Accumulated_Precipitation'], *params
-        )
-        
-        # Transform to standard normal distribution for SPI values
-        df_aux['SPI'] = norm.ppf(df_aux['Cumulative_Probability'])
-        
-        spi_value_df = df_aux[['SPI']].copy()
-        spi_value_df.columns = ['The Standardized Precipitation Index (SPI)']
+        # Fit gamma distribution to accumulated precipitation and compute SPI
+        try:
+            params = gamma.fit(df_aux['Accumulated_Precipitation'], floc=0)
+            df_aux['Cumulative_Probability'] = gamma.cdf(df_aux['Accumulated_Precipitation'], *params)
+            df_aux['SPI'] = norm.ppf(df_aux['Cumulative_Probability'])
+            spi_value_df = df_aux[['SPI']].copy()
+            spi_value_df.columns = ['The Standardized Precipitation Index (SPI)']
+            results['The Standardized Precipitation Index (SPI)'] = spi_value_df
+        except Exception as e:
+            QgsMessageLog.logMessage(f'Failed to compute SPI: {e}', 'ClimaPlots', Qgis.Warning)
+            print(f'Failed to compute SPI: {e}')
 
-        print('Climate indices computation completed successfully')
+        print('Climate indices computation completed')
 
-        # Store all computed indices in dictionary for later access
-        self.dataframes_dict = {
-            'Annual Frost Days': frost_days_df,
-            'Annual Tropical Nights': tropical_nights_df,
-            'Annual Icing Days': icing_days_df,
-            'Annual Summer Days': summer_days_df,
-            'Monthly Maximum Temperature': txx_df,
-            'Monthly Minimum Temperature of Maximum Temperatures': txn_df,
-            'Monthly Maximum Temperature of Minimum Temperatures': tnx_df,
-            'Monthly Minimum Temperature': tnn_df,
-            'Daily Temperature Range': dtr_df,
-            'Monthly Maximum 1-day Precipitation': rx1day_df,
-            'Monthly Maximum 5-day Precipitation': rx5day_df,
-            'Annual Count of Days when Precipitation Exceeds 10mm': r10mm_df,
-            'Annual Count of Days when Precipitation Exceeds 20mm': r20mm_df,
-            'Total Annual Precipitation': prcptot_annual_df,
-            'Simple Precipitation Intensity Index': sdii_value_df,
-            'Number of Consecutive Dry Days in a Month': cdd_value_df,
-            'Number of Consecutive Wet Days in a Month': cwd_value_df,
-            'The Standardized Precipitation Index (SPI)': spi_value_df,
-        }
+        # Store all successfully computed indices in dictionary for later access
+        self.dataframes_dict = results
 
     def plots3(self):
         """
@@ -885,16 +933,86 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         print('Generating climate indices plot...')
         
         # Get the selected climate index data
-        df_plot = self.dataframes_dict[self.atributo_2.currentText()]
-        print(f'Selected index: {self.atributo_2.currentText()}')
-        
-        # Create the line plot
-        self.fig3 = px.line(
-            df_plot, 
-            y=self.atributo_2.currentText(), 
-            title=(f'<b>{self.atributo_2.currentText()}</b> '
-                  f'(Long: {self.LongEdit.text()} Lat: {self.LatEdit.text()})')
-        )
+        selected = self.atributo_2.currentText()
+        if selected not in self.dataframes_dict:
+            QMessageBox.warning(self, 'No data', f"No computed data available for '{selected}'")
+            return
+
+        df_plot = self.dataframes_dict[selected].copy()
+        print(f'Selected index: {selected}')
+
+        # Determine which column to plot:
+        # 1) exact match with selected name
+        # 2) if only one column exists, use it
+        # 3) otherwise, pick the first numeric column
+        if selected in df_plot.columns:
+            ycol = selected
+        elif df_plot.shape[1] == 1:
+            ycol = df_plot.columns[0]
+        else:
+            numeric_cols = df_plot.select_dtypes(include=[np.number]).columns.tolist()
+            if numeric_cols:
+                ycol = numeric_cols[0]
+            else:
+                QMessageBox.warning(self, 'Data not plottable', f"No numeric column found for '{selected}'")
+                return
+
+        print(f'Plotting column: {ycol}')
+
+        # Run statistical tests (Mann-Kendall and Pettitt) on the chosen series
+        test_title = ''
+        try:
+            # Prepare series similar to plots1: a one-column DataFrame or Series
+            if 'Date' in df_plot.columns:
+                df_test = df_plot[[ycol]].copy()
+                df_test.index = pd.to_datetime(df_plot['Date'])
+            else:
+                df_test = df_plot[[ycol]].copy()
+
+            # Mann-Kendall
+            try:
+                result_mk = mk.original_test(df_test)
+                title1 = (f'Mann Kendall Test: <b>{result_mk.trend}</b>, alpha=0.05, '
+                          f'p-value={round(result_mk.p, 4)}')
+            except Exception as e:
+                title1 = f'Mann Kendall Test failed: {e}'
+
+            # Pettitt
+            try:
+                result_pettitt = hg.pettitt_test(df_test)
+                if result_pettitt.h:
+                    title2 = (f'Pettitt Test: data is <b>nonhomogeneous</b>, '
+                              f'probable change point location={str(result_pettitt.cp)[:4]}, '
+                              f'alpha=0.05, p-value={round(result_pettitt.p, 4)}')
+                else:
+                    title2 = (f'Pettitt Test: data is <b>homogeneous</b>, '
+                              f'alpha=0.05, p-value={round(result_pettitt.p, 4)}')
+            except Exception as e:
+                title2 = f'Pettitt Test failed: {e}'
+
+            test_title = title1 + '<br>' + title2
+        except Exception as e:
+            test_title = f'Stat tests failed: {e}'
+
+        # Create the line plot (use index as x if no explicit Date column)
+        full_title = (f'<b>{selected}</b> (Long: {self.LongEdit.text()} Lat: {self.LatEdit.text()})')
+        if test_title:
+            full_title = full_title + '<br>' + test_title
+
+        if 'Date' in df_plot.columns:
+            self.fig3 = px.line(
+                df_plot,
+                x='Date',
+                y=ycol,
+                title=full_title
+            )
+        else:
+            self.fig3 = px.line(
+                df_plot,
+                y=ycol,
+                title=full_title
+            )
+
         self.fig3.update_layout(showlegend=False)
         
         # Render plot in web view
@@ -934,7 +1052,10 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         # Construct API request URL
         base_url = (
             r"https://power.larc.nasa.gov/api/temporal/daily/point?"
-            r"parameters=T2M_MAX,PRECTOTCORR,T2M_MIN&community=RE&"
+            # Request max/min temperature, precipitation (corrected),
+            # relative humidity at 2m (RH2M) and surface shortwave downwelling
+            # (ALLSKY_SFC_SW_DWN) for irradiation
+            r"parameters=T2M_MAX,PRECTOTCORR,T2M_MIN,RH2M,ALLSKY_SFC_SW_DWN&community=RE&"
             r"longitude={longitude}&latitude={latitude}&"
             r"start=19810101&end=" + endtime + "&format=JSON"
         )
@@ -995,15 +1116,26 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         # Convert to DataFrame and rename columns
         df = pd.DataFrame.from_dict(content['properties']['parameter'])
         df = df.reset_index().rename(columns={
-            'index': 'Date', 
-            'PRECTOTCORR': 'Precipitation', 
-            'T2M_MIN': 'Min Temperature', 
-            'T2M_MAX': 'Max Temperature'
+            'index': 'Date',
+            'PRECTOTCORR': 'Precipitation',
+            'T2M_MIN': 'Min Temperature',
+            'T2M_MAX': 'Max Temperature',
+            'RH2M': 'Relative Humidity',
+            'ALLSKY_SFC_SW_DWN': 'Irradiation'
         })
         
         # Convert date column to datetime
         df.Date = pd.to_datetime(df.Date)
-        
+        # Convert irradiation units to kWh/m^2/day
+        # ALLSKY_SFC_SW_DWN from NASA POWER is given in W/m^2 (daily mean);
+        # to convert W/m^2 to kWh/m^2/day multiply by 24 (hours) and divide by 1000.
+        try:
+            if 'Irradiation' in df.columns:
+                df['Irradiation'] = pd.to_numeric(df['Irradiation'], errors='coerce') * 24.0 / 1000.0
+        except Exception as e:
+            # Non-fatal: keep original values if conversion fails
+            print(f'Warning: failed to convert Irradiation units: {e}')
+
         print('Climate data request completed successfully')
         print(df.head())
         return df

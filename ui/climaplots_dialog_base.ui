@@ -75,7 +75,7 @@
     <bool>false</bool>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <property name="usesScrollButtons">
     <bool>false</bool>
@@ -337,21 +337,6 @@
        <pointsize>12</pointsize>
       </font>
      </property>
-     <item>
-      <property name="text">
-       <string>Max Temperature</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Precipitation</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Min Temperature</string>
-      </property>
-     </item>
     </widget>
     <widget class="QPushButton" name="save_plot">
      <property name="geometry">
