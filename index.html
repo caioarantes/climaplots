@@ -17,6 +17,13 @@
         .demo-section { text-align: center; margin: 2em 0; padding: 1.5em; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
         .demo-gif { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .demo-caption { margin-top: 1em; font-style: italic; color: #666; }
+    /* Video thumbnail wrapper (GIF on top, clickable video thumbnail below) */
+    .video-thumb { display: inline-block; text-align: center; }
+    .video-thumb img.demo-gif { display: block; }
+    .video-thumb-img { display: block; margin-top: 0.6em; max-width: 480px; width: 100%; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; }
+    /* Embedded video styles */
+    .video-embed { margin-top: 0.6em; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 960px; }
+    .video-embed .embedded-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px; }
         
         /* Language selector styles */
         .language-selector {
@@ -294,7 +301,12 @@
 
             <div class="demo-section">
                 <h2>Como Funciona</h2>
-                <img src="medias/climateplots.gif" alt="Demonstração do Plugin ClimaPlots" class="demo-gif">
+                <div class="video-thumb">
+                    <img src="medias/climateplots.gif" alt="Demonstração do Plugin ClimaPlots" class="demo-gif">
+                    <div class="video-embed">
+                        <iframe id="pt-embed-iframe" class="embedded-video" src="https://www.youtube.com/embed/lnjLNt362Lo" title="Demonstração do ClimaPlots" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                </div>
                 <div class="demo-caption">
                     Demonstração interativa mostrando como usar o ClimaPlots: selecione um ponto no mapa, obtenha dados climáticos e visualize índices climáticos com gráficos interativos.
                 </div>
@@ -1343,6 +1355,7 @@
         </div>
     </div>
 
+
     <script>
         // Language switching functionality with browser detection
         function switchLanguage(lang) {
@@ -1397,8 +1410,8 @@
             switchLanguage(detectedLang);
         }
         
-        // Initialize language detection when page loads
-        document.addEventListener('DOMContentLoaded', detectLanguage);
+    // Initialize language detection when page loads
+    document.addEventListener('DOMContentLoaded', detectLanguage);
     </script>
 </body>
 </html>

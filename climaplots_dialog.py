@@ -657,6 +657,12 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         print('Plot 1 (Annual Trends) generated successfully')
 
         # Store data for export
+        # Ensure Year column exists for export
+        try:
+            if 'Year' not in df_mean.columns and 'Date' in df_mean.columns:
+                df_mean['Year'] = pd.to_datetime(df_mean['Date']).dt.year
+        except Exception:
+            pass
         self.df_save = df_mean
 
     def plots2(self):
@@ -746,6 +752,15 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         print('Thermopluviometric diagram generated successfully')
 
         # Store data for export
+        # Ensure Year column exists for export when possible
+        try:
+            if 'Month' in df.columns:
+                # if Month contains datetimes, extract year
+                dt = pd.to_datetime(df['Month'], errors='coerce')
+                if not dt.isna().all():
+                    df['Year'] = dt.dt.year
+        except Exception:
+            pass
         self.df_save2 = df
 
     def plots3_compute(self):
@@ -962,12 +977,14 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         # Run statistical tests (Mann-Kendall and Pettitt) on the chosen series
         test_title = ''
         try:
+            print(df_plot)
             # Prepare series similar to plots1: a one-column DataFrame or Series
             if 'Date' in df_plot.columns:
                 df_test = df_plot[[ycol]].copy()
                 df_test.index = pd.to_datetime(df_plot['Date'])
             else:
                 df_test = df_plot[[ycol]].copy()
+
 
             # Mann-Kendall
             try:
@@ -980,6 +997,7 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             # Pettitt
             try:
                 result_pettitt = hg.pettitt_test(df_test)
+                print(f'Pettitt test result: h={result_pettitt.h}, cp={result_pettitt.cp}, p={result_pettitt.p}')
                 if result_pettitt.h:
                     title2 = (f'Pettitt Test: data is <b>nonhomogeneous</b>, '
                               f'probable change point location={str(result_pettitt.cp)[:4]}, '
@@ -1023,8 +1041,21 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         # Add year column to DataFrame for better analysis and export
         if 'Date' in df_plot.columns:
             df_plot['Year'] = pd.to_datetime(df_plot['Date']).dt.year
-        elif df_plot.index.name == 'Date':
-            df_plot['Year'] = pd.to_datetime(df_plot.index).year
+        else:
+            # try several fallbacks: datetime index, index named Year, or integer year-like index
+            try:
+                idx = df_plot.index
+                # datetime index
+                if pd.api.types.is_datetime64_any_dtype(idx) or pd.api.types.is_datetime64_any_dtype(pd.to_datetime(idx, errors='coerce')):
+                    df_plot['Year'] = pd.to_datetime(idx).year
+                else:
+                    # integer-like index representing years
+                    if pd.api.types.is_integer_dtype(idx) or pd.api.types.is_integer_dtype(idx.astype('int', copy=False)):
+                        vals = np.array(idx, dtype='int')
+                        if vals.size and vals.min() >= 1800 and vals.max() <= 2100:
+                            df_plot['Year'] = vals
+            except Exception:
+                pass
         
         # Store data for export
         self.df_save3 = df_plot
@@ -1126,15 +1157,16 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         
         # Convert date column to datetime
         df.Date = pd.to_datetime(df.Date)
-        # Convert irradiation units to kWh/m^2/day
-        # ALLSKY_SFC_SW_DWN from NASA POWER is given in W/m^2 (daily mean);
-        # to convert W/m^2 to kWh/m^2/day multiply by 24 (hours) and divide by 1000.
+        # Parse 'Irradiation' values as numeric and keep the units as provided by the API.
+        # NOTE: automatic conversion removed; plugin will preserve whatever unit
+        # the API returns. If you want kWh/m^2/day, re-enable conversion after
+        # confirming the API unit.
         try:
             if 'Irradiation' in df.columns:
-                df['Irradiation'] = pd.to_numeric(df['Irradiation'], errors='coerce') * 24.0 / 1000.0
+                df['Irradiation'] = pd.to_numeric(df['Irradiation'], errors='coerce')
         except Exception as e:
-            # Non-fatal: keep original values if conversion fails
-            print(f'Warning: failed to convert Irradiation units: {e}')
+            # Non-fatal: keep original values if coercion fails
+            print(f'Warning: failed to parse Irradiation values: {e}')
 
         print('Climate data request completed successfully')
         print(df.head())
@@ -1156,6 +1188,59 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         QApplication.setOverrideCursor(Qt.WaitCursor)
         
         try:
+            # Clean previous results before running a new analysis
+            try:
+                # Dataframes
+                self.df = None
+                self.dataframes_dict = None
+                self.df_save = None
+                self.df_save2 = None
+                self.df_save3 = None
+                # Figures
+                self.fig = None
+                self.fig2 = None
+                self.fig3 = None
+                # Clear web views
+                try:
+                    self.webView_1.setHtml('')
+                except Exception:
+                    pass
+                try:
+                    self.webView_2.setHtml('')
+                except Exception:
+                    pass
+                try:
+                    self.webView_3.setHtml('')
+                except Exception:
+                    pass
+                # Clear stats widgets if present
+                try:
+                    if hasattr(self, 'results_text_1'):
+                        self.results_text_1.clear(); self.results_text_1.setVisible(False)
+                    if hasattr(self, 'results_text_3'):
+                        self.results_text_3.clear(); self.results_text_3.setVisible(False)
+                    if hasattr(self, 'save_stats_btn_1'):
+                        self.save_stats_btn_1.setVisible(False)
+                    if hasattr(self, 'save_stats_btn_3'):
+                        self.save_stats_btn_3.setVisible(False)
+                except Exception:
+                    pass
+                # Clear last stats
+                if hasattr(self, '_last_stats_1'):
+                    delattr(self, '_last_stats_1') if hasattr(self, '_last_stats_1') else None
+                if hasattr(self, '_last_stats_3'):
+                    delattr(self, '_last_stats_3') if hasattr(self, '_last_stats_3') else None
+                # Remove markers from canvas
+                try:
+                    canvas = getattr(self, 'canvas', None) or (self.iface.mapCanvas() if hasattr(self, 'iface') else None)
+                    markers = getattr(self, 'Markers', None)
+                    if canvas and markers:
+                        Delete_Marker(canvas, markers)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
             # Fetch climate data
             self.df = self.actual_request_api()
             

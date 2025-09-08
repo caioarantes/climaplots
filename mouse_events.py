@@ -14,7 +14,17 @@ def handleMouseDown(canvas, dlg, Markers, point, button):
         pass
 
     crsSrc = canvas.mapSettings().destinationCrs()
-    crsDest = QgsCoordinateReferenceSystem(4326)
+    # Use modern CRS construction to avoid deprecation warnings
+    try:
+        # Preferred: create from EPSG id when API available
+        crsDest = QgsCoordinateReferenceSystem.fromEpsgId(4326)
+    except Exception:
+        # Fallback: use textual CRS definition
+        try:
+            crsDest = QgsCoordinateReferenceSystem('EPSG:4326')
+        except Exception:
+            # Last resort: cast integer (older API)
+            crsDest = QgsCoordinateReferenceSystem(4326)
     xform = QgsCoordinateTransform(crsSrc, crsDest, QgsProject.instance()) 
     newPoint = xform.transform(point)
     dlg.LongEdit.setText(str(round(newPoint.x(),4)))
