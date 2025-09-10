@@ -707,21 +707,38 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             go.Bar(
                 x=df['Month'], 
                 y=df['Precipitation'], 
-                name='Precipitation'
+                name='Precipitation',
+                marker_color='#3498db'
             ),
             secondary_y=False,
         )
-        
+
         # Add maximum temperature line (secondary y-axis)
         self.fig2.add_trace(
             go.Scatter(
                 x=df['Month'], 
                 y=df['Max Temperature'], 
                 mode='lines+markers',
-                name='Max Temperature'
+                name='Max Temperature',
+                line=dict(color='#e67e22'),
+                marker=dict(color='#e67e22')
             ),
             secondary_y=True,
         )
+
+        # Add minimum temperature line (secondary y-axis)
+        if 'Min Temperature' in df.columns:
+            self.fig2.add_trace(
+                go.Scatter(
+                    x=df['Month'],
+                    y=df['Min Temperature'],
+                    mode='lines+markers',
+                    name='Min Temperature',
+                    line=dict(color='#2ecc71', dash='dot'),
+                    marker=dict(color='#2ecc71')
+                ),
+                secondary_y=True,
+            )
         
         # Update layout and titles
         self.fig2.update_layout(
@@ -737,7 +754,7 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
 
         # Set y-axes titles
         self.fig2.update_yaxes(
-            title_text="Max Temperature (ºC)", 
+            title_text="Temperature (ºC)", 
             secondary_y=True
         )
         self.fig2.update_yaxes(
@@ -1154,7 +1171,7 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             'RH2M': 'Relative Humidity',
             'ALLSKY_SFC_SW_DWN': 'Irradiation'
         })
-        
+        df['Irradiation'].replace(-999.0, np.nan, inplace=True)
         # Convert date column to datetime
         df.Date = pd.to_datetime(df.Date)
         # Parse 'Irradiation' values as numeric and keep the units as provided by the API.
