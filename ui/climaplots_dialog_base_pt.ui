@@ -75,7 +75,7 @@
     <bool>false</bool>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>2</number>
    </property>
    <property name="usesScrollButtons">
     <bool>false</bool>
@@ -455,6 +455,9 @@
        <normaloff>../medias/diskette.png</normaloff>../medias/diskette.png</iconset>
      </property>
     </widget>
+    <zorder>webView_2</zorder>
+    <zorder>navegador_2</zorder>
+    <zorder>save_plot2</zorder>
    </widget>
    <widget class="QWidget" name="tab_3">
     <attribute name="title">
