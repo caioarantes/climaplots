@@ -175,7 +175,12 @@ from .mouse_events import Delete_Marker
 # UI CONFIGURATION
 # =============================================================================
 # Load the UI file for the main dialog
-ui_file = os.path.join("ui", "climaplots_dialog_base.ui")
+language = QSettings().value("locale/userLocale", "en")[0:2]
+
+if language == "pt":
+    ui_file = os.path.join("ui", "climaplots_dialog_base_pt.ui")
+else:
+    ui_file = os.path.join("ui", "climaplots_dialog_base.ui")
 FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), ui_file))
 
 # =============================================================================
@@ -258,6 +263,7 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         
         # Setup climate indices dropdown
         self._setup_climate_indices()
+        self.language = QgsApplication.instance().locale()[:2]
         
         # Set initial UI state
         self.tabWidget.setCurrentIndex(0)
@@ -281,15 +287,7 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
         self.learn.clicked.connect(self.open_learn_dialog)
 
     def language_method(self):
-        lang = QgsApplication.instance().locale()
-        self.language = lang[:2]
-        print(f"Current locale: {self.language}")
-        self.gerar_req.setText("Run Analysis")
 
-
-        atributos = ["Max Temperature", "Min Temperature", "Precipitation"]
-
-        # Include irradiation and relative humidity as selectable attributes
         atributos = ["Max Temperature", "Min Temperature", "Precipitation", "Relative Humidity", "Irradiation"]
 
         for atributo in atributos:
@@ -1015,9 +1013,24 @@ class ClimaPlotsDialog(QDialog, FORM_CLASS):
             try:
                 result_pettitt = hg.pettitt_test(df_test)
                 print(f'Pettitt test result: h={result_pettitt.h}, cp={result_pettitt.cp}, p={result_pettitt.p}')
+                def format_cp_label(cp, idx):
+                    print(type(cp), type(idx))
+                    # If idx is a pandas Index, try to get the label at position cp
+                    if type(idx).__name__ == 'Index' or str(type(idx)).endswith('pandas.core.indexes.base.Index'):
+                        try:
+                            return idx[cp]
+                        except Exception:
+                            return cp
+                    print(f'test - Formatting change point label for cp={cp} and index={idx}')
+                    # Exibe o rótulo do índice na posição cp, sem conversão
+        
+                    return cp
+
+
                 if result_pettitt.h:
+                    cp_label = format_cp_label(result_pettitt.cp, df_test.index)
                     title2 = (f'Pettitt Test: data is <b>nonhomogeneous</b>, '
-                              f'probable change point location={str(result_pettitt.cp)[:4]}, '
+                              f'probable change point location={cp_label}, '
                               f'alpha=0.05, p-value={round(result_pettitt.p, 4)}')
                 else:
                     title2 = (f'Pettitt Test: data is <b>homogeneous</b>, '
